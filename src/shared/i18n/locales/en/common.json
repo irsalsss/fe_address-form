@@ -2,5 +2,10 @@
   "scaffold": "ready",
   "app": {
     "title": "FrankieOne — Address Onboarding"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "id": "Bahasa Indonesia"
   }
 }
