@@ -1,0 +1,225 @@
+openapi: 3.1.0
+info:
+  title: AcmeCorp Address Onboarding API
+  version: 1.0.0
+  description: >
+    Country-aware address capture. Validates and persists addresses for
+    USA / AUS / IDN, and exposes per-country field + validation metadata so
+    dynamic clients render any supported country without redeploying.
+servers:
+  - url: http://localhost:4000
+    description: Local dev (BE scaffold default PORT=4000)
+
+paths:
+  /addresses:
+    post:
+      operationId: createAddress
+      summary: Create (validate + persist) an address
+      description: >
+        Server re-validates the payload against the country's schema before
+        persisting. Invalid payloads are rejected (422) with field-level errors
+        and nothing is stored. (FR-016, FR-017)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAddressRequest"
+      responses:
+        "201":
+          description: Address stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+        "422":
+          description: Validation failed (required/format/enum) — no row written
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblem"
+    get:
+      operationId: listAddresses
+      summary: List saved addresses (demo retrieval)
+      description: Returns all saved addresses, each with its country and full field set intact. (FR-018, SC-004)
+      responses:
+        "200":
+          description: Saved addresses
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Address"
+
+  /addresses/metadata:
+    get:
+      operationId: getCountryMetadata
+      summary: Per-country field definitions + validation rules (bonus, FR-019)
+      description: >
+        The dynamic-metadata contract. Returns the ordered field descriptors,
+        required flags, formats, and dropdown options for each supported country.
+      parameters:
+        - in: query
+          name: country
+          required: false
+          schema:
+            $ref: "#/components/schemas/Country"
+          description: Optional filter to a single country
+      responses:
+        "200":
+          description: Country metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CountryConfig"
+
+components:
+  schemas:
+    Country:
+      type: string
+      enum: [USA, AUS, IDN]
+
+    FieldDescriptor:
+      type: object
+      required: [key, labelKey, type, required]
+      properties:
+        key:
+          type: string
+          example: zipCode
+        labelKey:
+          type: string
+          description: i18n key in the address-form namespace
+          example: fields.zipCode
+        type:
+          type: string
+          enum: [text, select]
+        required:
+          type: boolean
+        format:
+          type: string
+          description: format-rule id applied to the value
+          enum: [zip5, postcode4, postal5]
+        options:
+          type: array
+          description: present when type=select
+          items:
+            type: object
+            required: [value, labelKey]
+            properties:
+              value:
+                type: string
+              labelKey:
+                type: string
+
+    CountryConfig:
+      type: object
+      required: [country, fields]
+      properties:
+        country:
+          $ref: "#/components/schemas/Country"
+        fields:
+          type: array
+          description: ordered field descriptors (order is significant)
+          items:
+            $ref: "#/components/schemas/FieldDescriptor"
+
+    UsaFields:
+      type: object
+      required: [addressLine1, city, state, zipCode]
+      properties:
+        addressLine1: { type: string, minLength: 1 }
+        addressLine2: { type: string }
+        city: { type: string, minLength: 1 }
+        state: { type: string, description: 2-letter US state code }
+        zipCode: { type: string, pattern: "^\\d{5}$" }
+      additionalProperties: false
+
+    AusFields:
+      type: object
+      required: [addressLine1, suburb, state, postcode]
+      properties:
+        addressLine1: { type: string, minLength: 1 }
+        addressLine2: { type: string }
+        suburb: { type: string, minLength: 1 }
+        state:
+          type: string
+          enum: [NSW, VIC, QLD, WA, SA, TAS, ACT, NT]
+        postcode: { type: string, pattern: "^\\d{4}$" }
+      additionalProperties: false
+
+    IdnFields:
+      type: object
+      required: [province, cityRegency, district, postalCode, streetAddress]
+      properties:
+        province: { type: string, description: Indonesian province name }
+        cityRegency: { type: string, minLength: 1 }
+        district: { type: string, minLength: 1, description: Kecamatan }
+        village: { type: string, description: Kelurahan/Desa }
+        postalCode: { type: string, pattern: "^\\d{5}$" }
+        streetAddress: { type: string, minLength: 1 }
+      additionalProperties: false
+
+    CreateAddressRequest:
+      type: object
+      required: [country, fields]
+      properties:
+        country:
+          $ref: "#/components/schemas/Country"
+        googlePlaceId:
+          type: string
+          description: optional, set when address came from autocomplete
+        fields:
+          oneOf:
+            - $ref: "#/components/schemas/UsaFields"
+            - $ref: "#/components/schemas/AusFields"
+            - $ref: "#/components/schemas/IdnFields"
+          description: shape MUST match the discriminating country
+      discriminator:
+        propertyName: country
+
+    Address:
+      type: object
+      required: [id, country, fields, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        country:
+          $ref: "#/components/schemas/Country"
+        fields:
+          oneOf:
+            - $ref: "#/components/schemas/UsaFields"
+            - $ref: "#/components/schemas/AusFields"
+            - $ref: "#/components/schemas/IdnFields"
+        createdAt:
+          type: string
+          format: date-time
+
+    ValidationProblem:
+      type: object
+      description: RFC 7807 problem+json with field-level errors
+      required: [title, status]
+      properties:
+        type: { type: string, default: about:blank }
+        title: { type: string, example: Validation failed }
+        status: { type: integer, example: 422 }
+        detail: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field: { type: string, example: zipCode }
+              message: { type: string, example: must be 5 digits }

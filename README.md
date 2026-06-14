@@ -138,3 +138,7 @@ prompt: initiate Vite, React, Typescript, Tailwind v4, shadcn/ui, unit test usin
 ```
 /speckit-specify
 ```
+5. Run in terminal agents:
+```
+/speckit-plan
+```
