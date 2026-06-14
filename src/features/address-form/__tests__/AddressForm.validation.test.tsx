@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@/shared/i18n";
 import { AddressForm } from "../components/AddressForm";
 import { useAddressFormStore } from "../stores/addressFormStore";
+import { COUNTRY_FIELDS, COUNTRY_LIST } from "./fixtures/metadata";
 
 const hoisted = vi.hoisted(() => ({ mutate: vi.fn() }));
 
@@ -25,14 +26,33 @@ vi.mock("../api/useCreateAddress", () => ({
     isSuccess: false,
   }),
 }));
+vi.mock("../api/useCountries");
+vi.mock("../api/useCountryMetadata");
+
+import { useCountries } from "../api/useCountries";
+import { useCountryMetadata } from "../api/useCountryMetadata";
 
 const manualEdit = () => userEvent.click(screen.getByRole("button", { name: /manually edit/i }));
 const submit = () => userEvent.click(screen.getByRole("button", { name: /save address/i }));
 
-describe("AddressForm — validation & country switch (US2)", () => {
+describe("AddressForm — runtime validation & country switch (US2)", () => {
   beforeEach(() => {
     hoisted.mutate.mockClear();
     useAddressFormStore.getState().reset();
+    vi.mocked(useCountries).mockReturnValue({
+      data: COUNTRY_LIST,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCountries>);
+    vi.mocked(useCountryMetadata).mockImplementation(
+      (code) =>
+        ({
+          data: code ? { code, name: code, version: "v1", fields: COUNTRY_FIELDS[code] } : undefined,
+          isPending: false,
+          isError: false,
+          refetch: vi.fn(),
+        }) as unknown as ReturnType<typeof useCountryMetadata>,
+    );
   });
 
   it("switches country: layout swaps and shared fields carry while incompatible clear", async () => {
@@ -46,10 +66,8 @@ describe("AddressForm — validation & country switch (US2)", () => {
     act(() => useAddressFormStore.getState().setCountry("AUS"));
     await manualEdit(); // setCountry resets manualEdit; re-enter
 
-    // AUS layout present, USA-only field gone.
     expect(screen.getByLabelText(/Suburb/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/ZIP Code/i)).not.toBeInTheDocument();
-    // Shared field carried over.
     expect(screen.getByLabelText(/Address Line 1/i)).toHaveValue("1 Main St");
   });
 
@@ -63,14 +81,14 @@ describe("AddressForm — validation & country switch (US2)", () => {
     expect(hoisted.mutate).not.toHaveBeenCalled();
   });
 
-  it("rejects a wrong-length ZIP with a localized format error", async () => {
+  it("rejects a wrong-length ZIP with a metadata-derived format error", async () => {
     useAddressFormStore.setState({ selectedCountry: "USA" });
     render(<AddressForm />);
     await manualEdit();
     await userEvent.type(screen.getByLabelText(/ZIP Code/i), "123");
     await submit();
 
-    expect(await screen.findByText(/5-digit ZIP code/i)).toBeInTheDocument();
+    expect(await screen.findByText(/exactly 5 digits/i)).toBeInTheDocument();
     expect(hoisted.mutate).not.toHaveBeenCalled();
   });
 });

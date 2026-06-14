@@ -30,7 +30,7 @@ describe("http error mapping (FR-017)", () => {
       },
     });
 
-    const err = await http.post("/addresses", {}).catch((e) => e);
+    const err = (await http.post("/addresses", {}).catch((e) => e)) as ApiError;
 
     expect(err).toBeInstanceOf(ApiError);
     expect(err.status).toBe(400);
@@ -48,7 +48,7 @@ describe("http error mapping (FR-017)", () => {
       details: { formErrors: ["UNSUPPORTED_COUNTRY"], fieldErrors: {} },
     });
 
-    const err = await http.post("/addresses", {}).catch((e) => e);
+    const err = (await http.post("/addresses", {}).catch((e) => e)) as ApiError;
 
     expect(err.formErrors).toEqual(["UNSUPPORTED_COUNTRY"]);
     expect(err.fieldErrors).toEqual([]);
@@ -60,7 +60,7 @@ describe("http error mapping (FR-017)", () => {
       details: { fieldErrors: { postalCode: [] } },
     });
 
-    const err = await http.post("/addresses", {}).catch((e) => e);
+    const err = (await http.post("/addresses", {}).catch((e) => e)) as ApiError;
 
     expect(err.fieldErrors).toEqual([{ field: "postalCode", message: "Invalid" }]);
   });

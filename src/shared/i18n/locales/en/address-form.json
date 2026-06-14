@@ -18,27 +18,32 @@
   "submitting": "Saving…",
   "submitError": "Could not save the address. Please try again.",
   "submitSuccess": "Address saved.",
+  "state": {
+    "loading": "Loading address fields…",
+    "error": "Could not load address fields.",
+    "retry": "Retry"
+  },
   "fields": {
-    "addressLine1": "Address Line 1",
-    "addressLine2": "Address Line 2",
+    "line1": "Address Line 1",
+    "line2": "Address Line 2",
     "city": "City",
     "state": "State",
-    "zipCode": "ZIP Code",
+    "zip": "ZIP Code",
     "suburb": "Suburb",
     "postcode": "Postcode",
     "province": "Province",
-    "cityRegency": "City / Regency",
     "district": "District (Kecamatan)",
     "village": "Village (Kelurahan/Desa)",
     "postalCode": "Postal Code",
-    "streetAddress": "Street Address"
+    "street": "Street Address"
   },
   "optional": "optional",
   "errors": {
     "required": "This field is required",
-    "zip5": "Must be a 5-digit ZIP code",
-    "postcode4": "Must be a 4-digit postcode",
-    "postal5": "Must be a 5-digit postal code",
+    "numeric": "Must contain only digits",
+    "length": "Must be exactly {{count}} digits",
+    "maxLength": "Must be at most {{count}} characters",
+    "pattern": "Invalid format",
     "invalidOption": "Please select a valid option"
   },
   "confirm": {

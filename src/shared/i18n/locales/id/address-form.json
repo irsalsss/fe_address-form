@@ -18,27 +18,32 @@
   "submitting": "Menyimpan…",
   "submitError": "Gagal menyimpan alamat. Silakan coba lagi.",
   "submitSuccess": "Alamat tersimpan.",
+  "state": {
+    "loading": "Memuat kolom alamat…",
+    "error": "Gagal memuat kolom alamat.",
+    "retry": "Coba lagi"
+  },
   "fields": {
-    "addressLine1": "Alamat Baris 1",
-    "addressLine2": "Alamat Baris 2",
+    "line1": "Alamat Baris 1",
+    "line2": "Alamat Baris 2",
     "city": "Kota",
     "state": "Negara Bagian",
-    "zipCode": "Kode Pos",
+    "zip": "Kode Pos",
     "suburb": "Suburb",
     "postcode": "Kode Pos",
     "province": "Provinsi",
-    "cityRegency": "Kota / Kabupaten",
     "district": "Kecamatan",
     "village": "Kelurahan/Desa",
     "postalCode": "Kode Pos",
-    "streetAddress": "Alamat Jalan"
+    "street": "Alamat Jalan"
   },
   "optional": "opsional",
   "errors": {
     "required": "Kolom ini wajib diisi",
-    "zip5": "Harus berupa kode pos 5 digit",
-    "postcode4": "Harus berupa kode pos 4 digit",
-    "postal5": "Harus berupa kode pos 5 digit",
+    "numeric": "Hanya boleh berisi angka",
+    "length": "Harus tepat {{count}} digit",
+    "maxLength": "Maksimal {{count}} karakter",
+    "pattern": "Format tidak valid",
     "invalidOption": "Silakan pilih opsi yang valid"
   },
   "confirm": {

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Address, Country } from "../types";
+import type { AddressFormValues, Country } from "../types";
 
 /**
  * Feature UI state (Constitution IV). Server data lives in TanStack Query, form
@@ -13,12 +13,12 @@ interface AddressFormState {
   selectedCountry: Country | null;
   manualEdit: boolean;
   googlePlaceId?: string;
-  draft: Partial<Address>;
+  draft: Partial<AddressFormValues>;
   /** Switching country resets dependent UI state deterministically (D4 / SC-005). */
   setCountry: (country: Country) => void;
   setManualEdit: (manualEdit: boolean) => void;
   setGooglePlaceId: (id: string | undefined) => void;
-  setDraft: (draft: Partial<Address>) => void;
+  setDraft: (draft: Partial<AddressFormValues>) => void;
   reset: () => void;
 }
 
@@ -26,7 +26,7 @@ const initial = {
   selectedCountry: null as Country | null,
   manualEdit: false,
   googlePlaceId: undefined as string | undefined,
-  draft: {} as Partial<Address>,
+  draft: {} as Partial<AddressFormValues>,
 };
 
 export const useAddressFormStore = create<AddressFormState>((set) => ({

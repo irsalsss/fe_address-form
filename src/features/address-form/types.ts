@@ -1,43 +1,20 @@
-export type Country = "USA" | "AUS" | "IDN";
+/**
+ * Country code. Dynamic — the supported set comes from the backend (GET
+ * /countries), so this is a string, not a closed literal union (FR-001/FR-017).
+ */
+export type Country = string;
 
-export interface USAAddress {
-  line1: string;
-  line2?: string;
-  city: string;
-  state: string;
-  zip: string;
-}
+/**
+ * Flat value shape React Hook Form manages and the form submits. Keys are the
+ * active country's metadata field keys, unknown at compile time (FR-010); the
+ * backend `.strict()` validator is the authoritative gate.
+ */
+export type AddressFormValues = Record<string, string>;
 
-export interface AUSAddress {
-  line1: string;
-  line2?: string;
-  suburb: string;
-  state: string;
-  postcode: string;
-}
-
-export interface IDNAddress {
-  province: string;
-  city: string;
-  district: string;
-  village?: string;
-  postalCode: string;
-  street: string;
-}
-
-export type Address = USAAddress | AUSAddress | IDNAddress;
-
-export interface AddressFormData {
-  country: Country;
-  googlePlaceId?: string;
-  manualEntry: boolean;
-  address: Address;
-}
-
-/** Request body sent to POST /addresses (matches contracts/openapi.yaml). */
+/** Request body sent to POST /addresses. */
 export interface CreateAddressRequest {
   country: Country;
-  fields: Address;
+  fields: Record<string, string>;
   googlePlaceId?: string;
 }
 
@@ -45,6 +22,6 @@ export interface CreateAddressRequest {
 export interface AddressResponse {
   id: string;
   country: Country;
-  fields: Address;
+  fields: Record<string, string>;
   createdAt: string;
 }

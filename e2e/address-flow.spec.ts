@@ -9,8 +9,66 @@ import { expect, test } from "@playwright/test";
 
 const created: unknown[] = [];
 
+const COUNTRIES = [
+  { code: "USA", name: "United States", version: "v1" },
+  { code: "AUS", name: "Australia", version: "v1" },
+  { code: "IDN", name: "Indonesia", version: "v1" },
+];
+
+const FIELDS: Record<string, unknown[]> = {
+  USA: [
+    { key: "line1", label: "Address Line 1", required: true, type: "text", order: 1 },
+    { key: "line2", label: "Address Line 2", required: false, type: "text", order: 2 },
+    { key: "city", label: "City", required: true, type: "text", order: 3 },
+    {
+      key: "state",
+      label: "State",
+      required: true,
+      type: "dropdown",
+      order: 4,
+      options: [
+        { value: "CA", label: "California" },
+        { value: "NY", label: "New York" },
+      ],
+    },
+    { key: "zip", label: "ZIP Code", required: true, type: "text", order: 5, validation: { length: 5, numeric: true } },
+  ],
+  AUS: [
+    { key: "line1", label: "Address Line 1", required: true, type: "text", order: 1 },
+    { key: "suburb", label: "Suburb", required: true, type: "text", order: 2 },
+    {
+      key: "state",
+      label: "State",
+      required: true,
+      type: "dropdown",
+      order: 3,
+      options: [{ value: "NSW", label: "New South Wales" }],
+    },
+    { key: "postcode", label: "Postcode", required: true, type: "text", order: 4, validation: { length: 4, numeric: true } },
+  ],
+  IDN: [
+    { key: "province", label: "Province", required: true, type: "text", order: 1 },
+    { key: "city", label: "City / Regency", required: true, type: "text", order: 2 },
+    { key: "postalCode", label: "Postal Code", required: true, type: "text", order: 3, validation: { length: 5, numeric: true } },
+    { key: "street", label: "Street Address", required: true, type: "text", order: 4 },
+  ],
+};
+
 test.beforeEach(async ({ page }) => {
   created.length = 0;
+  // Country metadata is fetched at runtime (no local config) — mock both endpoints.
+  await page.route("**/countries", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(COUNTRIES) });
+  });
+  await page.route("**/countries/*/fields", async (route) => {
+    const segments = new URL(route.request().url()).pathname.split("/");
+    const code = segments[segments.length - 2] ?? "";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ code, name: code, version: "v1", fields: FIELDS[code] ?? [] }),
+    });
+  });
   await page.route("**/addresses", async (route) => {
     const request = route.request();
     if (request.method() === "POST") {

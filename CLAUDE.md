@@ -219,5 +219,5 @@ This scaffold was produced by `/senior-fe-architect`. Its scope was **strictly a
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/001-dynamic-address-form/plan.md`
+`specs/002-metadata-driven-form/plan.md`
 <!-- SPECKIT END -->

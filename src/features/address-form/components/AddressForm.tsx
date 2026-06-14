@@ -6,23 +6,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/shared/api/http";
+import { useCountries } from "../api/useCountries";
+import { useCountryMetadata, type MetadataFieldDef } from "../api/useCountryMetadata";
 import { useCreateAddress } from "../api/useCreateAddress";
-import { COUNTRY_CONFIGS } from "../config/country-config";
-import { useCountryFields } from "../hooks/useCountryFields";
 import { useGooglePlaces } from "../hooks/useGooglePlaces";
-import { addressResolver } from "../schemas";
+import { buildResolver } from "../schemas/buildSchema";
 import { useAddressFormStore } from "../stores/addressFormStore";
-import type { Address, Country } from "../types";
+import type { AddressFormValues } from "../types";
 import { AddressConfirmation } from "./AddressConfirmation";
 import { CountrySelect } from "./CountrySelect";
 import { DynamicFieldRenderer } from "./DynamicFieldRenderer";
+import { MetadataState } from "./MetadataState";
 import { PlacesAutocomplete } from "./PlacesAutocomplete";
 
 /**
  * Address form container. Country selector + (once a country is chosen) the
- * capture flow: autocomplete → confirmation, with a Manually Edit toggle into
- * editable country-specific fields. Switching country re-initialises the form,
- * preserving only fields shared between layouts (D4 / FR-007 / SC-005).
+ * metadata-driven capture flow. The field layout, options, and validation come
+ * entirely from the backend (FR-002/004) — there is no local country config.
  */
 export function AddressForm() {
   const { t } = useTranslation("address-form");
@@ -36,7 +36,7 @@ export function AddressForm() {
       <CardContent className="grid gap-6">
         <CountrySelect />
         {selectedCountry ? (
-          <CountryForm key={selectedCountry} country={selectedCountry} />
+          <CountryFormGate country={selectedCountry} />
         ) : (
           <div className="grid gap-2">
             <Label htmlFor="address-search-disabled">{t("search.label")}</Label>
@@ -51,20 +51,43 @@ export function AddressForm() {
   );
 }
 
-/** Seed a new country's form from the cross-country draft, keeping only keys that exist in this layout. */
-function seedFromDraft(country: Country): Partial<Address> {
-  const draft = useAddressFormStore.getState().draft as Record<string, unknown>;
-  const seeded: Record<string, unknown> = {};
-  for (const field of COUNTRY_CONFIGS[country].fields) {
-    if (draft[field.key] !== undefined) seeded[field.key] = draft[field.key];
-  }
-  return seeded as Partial<Address>;
+/**
+ * Fetches the selected country's metadata and gates the form on it: loading and
+ * error/retry states stand in until the layout is available (FR-008/009). The
+ * form no longer renders synchronously.
+ */
+function CountryFormGate({ country }: { country: string }) {
+  const { data: countries } = useCountries();
+  const version = countries?.find((c) => c.code === country)?.version;
+  const { data, isPending, isError, refetch } = useCountryMetadata(country, version);
+
+  if (isPending) return <MetadataState status="loading" />;
+  if (isError || !data) return <MetadataState status="error" onRetry={() => void refetch()} />;
+
+  // `key` re-initialises the form (and its draft seeding) on country change.
+  return <CountryForm key={country} country={country} fields={data.fields} />;
 }
 
-function CountryForm({ country }: { country: Country }) {
+/**
+ * Seed a new country's form from the cross-country draft, keeping only text keys
+ * that exist in this layout. Dropdown fields are skipped: a shared key name does
+ * NOT imply a shared option domain (a US state code is not a valid AUS state),
+ * so carrying it over produces an invalid, unselectable value (FR-015).
+ */
+function seedFromDraft(fields: MetadataFieldDef[]): AddressFormValues {
+  const draft = useAddressFormStore.getState().draft;
+  const seeded: AddressFormValues = {};
+  for (const field of fields) {
+    if (field.type === "dropdown") continue;
+    const value = draft[field.key];
+    if (value !== undefined) seeded[field.key] = value;
+  }
+  return seeded;
+}
+
+function CountryForm({ country, fields }: { country: string; fields: MetadataFieldDef[] }) {
   const { t } = useTranslation("address-form");
   const create = useCreateAddress();
-  const fields = useCountryFields(country);
   const setGooglePlaceId = useAddressFormStore((s) => s.setGooglePlaceId);
   const googlePlaceId = useAddressFormStore((s) => s.googlePlaceId);
   const setDraft = useAddressFormStore((s) => s.setDraft);
@@ -73,57 +96,69 @@ function CountryForm({ country }: { country: Country }) {
 
   const [captured, setCaptured] = useState(false);
   const [missingRequired, setMissingRequired] = useState<string[]>([]);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const resolver = useMemo(() => buildResolver(fields), [fields]);
 
   // Every field defaults to "" so inputs/selects are controlled from first render.
   const emptyValues = useMemo(() => {
-    const base: Record<string, string> = {};
-    for (const field of COUNTRY_CONFIGS[country].fields) base[field.key] = "";
-    return base as unknown as Address;
-  }, [country]);
+    const base: AddressFormValues = {};
+    for (const field of fields) base[field.key] = "";
+    return base;
+  }, [fields]);
 
   // Preserve fields shared with the previous country (e.g. line1).
   const initialValues = useMemo(
-    () => ({ ...emptyValues, ...seedFromDraft(country) }) as Address,
-    [country, emptyValues],
+    () => ({ ...emptyValues, ...seedFromDraft(fields) }),
+    [emptyValues, fields],
   );
 
-  const methods = useForm<Address>({
-    resolver: addressResolver(country),
+  const methods = useForm<AddressFormValues>({
+    resolver,
     mode: "onSubmit",
     defaultValues: initialValues,
   });
 
   // Mirror form values into the store so a country switch can carry shared fields.
   useEffect(() => {
-    const subscription = methods.watch((values) => setDraft(values as Partial<Address>));
+    const subscription = methods.watch((values) =>
+      setDraft(values as Partial<AddressFormValues>),
+    );
     return () => subscription.unsubscribe();
   }, [methods, setDraft]);
 
-  const { query, setQuery, predictions, selectPrediction, loading, unavailable } = useGooglePlaces(
-    {
-      country,
-      onResult: ({ fields: mapped, missingRequired: missing, placeId }) => {
-        methods.reset(mapped as Address);
-        setGooglePlaceId(placeId);
-        setMissingRequired(missing);
-        setCaptured(true);
-      },
+  const { query, setQuery, predictions, selectPrediction, loading, unavailable } = useGooglePlaces({
+    country,
+    fields,
+    onResult: ({ fields: mapped, missingRequired: missing, placeId }) => {
+      methods.reset({ ...emptyValues, ...stripUndefined(mapped) });
+      setGooglePlaceId(placeId);
+      setMissingRequired(missing);
+      setCaptured(true);
     },
-  );
+  });
 
   const onSubmit = methods.handleSubmit((values) => {
+    setFormError(null);
     create.mutate(
-      { country, fields: values as Address, googlePlaceId },
+      { country, fields: values, googlePlaceId },
       {
-        // Surface server-side field errors (400 BAD_REQUEST) on matching fields (FR-017).
+        // Surface server-side field errors on matching fields (FR-011).
         onError: (error) => {
           if (error instanceof ApiError) {
+            const known = new Set(fields.map((f) => f.key));
+            const unmatched: string[] = [...error.formErrors];
             for (const fieldError of error.fieldErrors) {
-              methods.setError(fieldError.field as keyof Address, {
-                type: "server",
-                message: fieldError.message,
-              });
+              if (known.has(fieldError.field)) {
+                methods.setError(fieldError.field, {
+                  type: "server",
+                  message: fieldError.message,
+                });
+              } else {
+                unmatched.push(fieldError.message);
+              }
             }
+            if (unmatched.length > 0) setFormError(unmatched.join(" "));
           }
         },
         // Clear the form after a successful save so the same address can't be re-posted.
@@ -163,17 +198,15 @@ function CountryForm({ country }: { country: Country }) {
           {manualEdit ? (
             <DynamicFieldRenderer fields={fields} />
           ) : (
-            captured && (
-              <AddressConfirmation fields={fields} missingRequired={missingRequired} />
-            )
+            captured && <AddressConfirmation fields={fields} missingRequired={missingRequired} />
           )}
 
           <Button type="submit" disabled={create.isPending}>
             {create.isPending ? t("submitting") : t("submit")}
           </Button>
-          {create.isError && (
+          {(create.isError || formError) && (
             <p role="alert" className="text-destructive text-sm">
-              {t("submitError")}
+              {formError ?? t("submitError")}
             </p>
           )}
           {create.isSuccess && (
@@ -185,4 +218,13 @@ function CountryForm({ country }: { country: Country }) {
       </div>
     </FormProvider>
   );
+}
+
+/** Drop undefined values so reset doesn't turn controlled inputs uncontrolled. */
+function stripUndefined(values: Record<string, string | undefined>): AddressFormValues {
+  const out: AddressFormValues = {};
+  for (const [key, value] of Object.entries(values)) {
+    if (value !== undefined) out[key] = value;
+  }
+  return out;
 }

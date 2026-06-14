@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { http } from "@/shared/api/http";
-import type { Country } from "../types";
 
-export const countryMetadataQueryKey = (code: Country) =>
-  ["country-metadata", code] as const;
+export const countryMetadataQueryKey = (code: string, version?: string) =>
+  ["country-metadata", code, version ?? "_"] as const;
 
 /** A dropdown option as returned by the backend metadata endpoint. */
 export interface MetadataFieldOption {
@@ -21,8 +20,8 @@ export interface MetadataFieldValidation {
 
 /**
  * Field descriptor as returned by the backend registry — the SOURCE OF TRUTH
- * for `key` (the submit payload key). Note `label` is plain English; the FE
- * renders its own i18n labels keyed by `key`, so `label` is reference only.
+ * for `key` (the submit payload key). `label` is plain English; the FE resolves
+ * its own i18n labels keyed by `key`, falling back to this `label` (FR-012).
  */
 export interface MetadataFieldDef {
   key: string;
@@ -37,22 +36,24 @@ export interface MetadataFieldDef {
 export interface CountryFieldsResponse {
   code: string;
   name: string;
+  /** Metadata version; bumping it invalidates the cache via the query key (FR-003). */
+  version?: string;
   fields: MetadataFieldDef[];
 }
 
 /**
  * Fetches a country's field definitions from the backend
- * (GET /api/v1/countries/:code/fields, FR-019).
- *
- * Reconciliation point: the local config registry (`country-config.ts`) is the
- * primary source for synchronous rendering + i18n. This endpoint is the server's
- * authoritative metadata; `registry-parity.test.ts` asserts the two cannot
- * silently diverge (the class of bug that produced the 400 on unrecognized keys).
+ * (GET /countries/:code/fields, FR-002). This is the authoritative, runtime
+ * source for the form's layout, options, and validation — there is no local
+ * country config. `version` (from GET /countries) is folded into the query key
+ * so a server-side change invalidates the cache automatically (FR-003); when
+ * absent the cache falls back to `staleTime`.
  */
-export function useCountryMetadata(code: Country) {
+export function useCountryMetadata(code: string | null, version?: string) {
   return useQuery({
-    queryKey: countryMetadataQueryKey(code),
+    queryKey: countryMetadataQueryKey(code ?? "", version),
     queryFn: () => http.get<CountryFieldsResponse>(`/countries/${code}/fields`),
-    staleTime: Infinity,
+    enabled: Boolean(code),
+    staleTime: 5 * 60 * 1000,
   });
 }

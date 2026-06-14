@@ -1,24 +1,24 @@
 import { useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import type { FieldDescriptor } from "../config/country-config";
-import type { Address } from "../types";
+import type { MetadataFieldDef } from "../api/useCountryMetadata";
+import { tFieldLabel } from "../lib/tDynamic";
+import type { AddressFormValues } from "../types";
 
 interface AddressConfirmationProps {
-  fields: FieldDescriptor[];
+  fields: MetadataFieldDef[];
   missingRequired?: string[];
 }
 
 /**
- * Read-only view of the captured address in the country's field order. Any
+ * Read-only view of the captured address in the metadata field order. Any
  * required field the autocomplete left unfilled is flagged for completion
- * (spec edge case "partial autocomplete result").
+ * (spec edge case "partial autocomplete result"). Generic — no per-country
+ * branches.
  */
 export function AddressConfirmation({ fields, missingRequired = [] }: AddressConfirmationProps) {
   const { t } = useTranslation("address-form");
-  const { getValues } = useFormContext<Address>();
-  const values = getValues() as unknown as Record<string, string | undefined>;
-  // Field label keys are dynamic (driven by the metadata registry).
-  const label = t as unknown as (key: string) => string;
+  const { getValues } = useFormContext<AddressFormValues>();
+  const values = getValues();
 
   return (
     <section className="grid gap-2" aria-label={t("confirm.title")}>
@@ -29,7 +29,7 @@ export function AddressConfirmation({ fields, missingRequired = [] }: AddressCon
           const missing = missingRequired.includes(field.key);
           return (
             <div key={field.key} className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">{label(field.labelKey)}</dt>
+              <dt className="text-muted-foreground">{tFieldLabel(t, field.key, field.label)}</dt>
               <dd className={missing ? "text-destructive" : ""}>
                 {value || (missing ? t("confirm.missingRequired") : "—")}
               </dd>
