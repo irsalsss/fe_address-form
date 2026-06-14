@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ApiError } from "@/shared/api/http";
 import { useCreateAddress } from "../api/useCreateAddress";
 import { COUNTRY_CONFIGS } from "../config/country-config";
 import { useCountryFields } from "../hooks/useCountryFields";
@@ -73,13 +74,23 @@ function CountryForm({ country }: { country: Country }) {
   const [captured, setCaptured] = useState(false);
   const [missingRequired, setMissingRequired] = useState<string[]>([]);
 
+  // Every field defaults to "" so inputs/selects are controlled from first render.
+  const emptyValues = useMemo(() => {
+    const base: Record<string, string> = {};
+    for (const field of COUNTRY_CONFIGS[country].fields) base[field.key] = "";
+    return base as unknown as Address;
+  }, [country]);
+
   // Preserve fields shared with the previous country (e.g. addressLine1).
-  const initialValues = useMemo(() => seedFromDraft(country), [country]);
+  const initialValues = useMemo(
+    () => ({ ...emptyValues, ...seedFromDraft(country) }) as Address,
+    [country, emptyValues],
+  );
 
   const methods = useForm<Address>({
     resolver: addressResolver(country),
     mode: "onSubmit",
-    defaultValues: initialValues as Address,
+    defaultValues: initialValues,
   });
 
   // Mirror form values into the store so a country switch can carry shared fields.
@@ -99,7 +110,29 @@ function CountryForm({ country }: { country: Country }) {
   });
 
   const onSubmit = methods.handleSubmit((values) => {
-    create.mutate({ country, fields: values as Address, googlePlaceId });
+    create.mutate(
+      { country, fields: values as Address, googlePlaceId },
+      {
+        // Surface server-side field errors (422) on the matching fields (FR-017).
+        onError: (error) => {
+          if (error instanceof ApiError) {
+            for (const fieldError of error.fieldErrors) {
+              methods.setError(fieldError.field as keyof Address, {
+                type: "server",
+                message: fieldError.message,
+              });
+            }
+          }
+        },
+        // Clear the form after a successful save so the same address can't be re-posted.
+        onSuccess: () => {
+          methods.reset(emptyValues);
+          setGooglePlaceId(undefined);
+          setCaptured(false);
+          setMissingRequired([]);
+        },
+      },
+    );
   });
 
   return (

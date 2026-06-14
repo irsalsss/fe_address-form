@@ -7,8 +7,9 @@ export const addressesQueryKey = ["addresses"] as const;
 
 /**
  * Create an address (POST /addresses). On success, invalidate the saved-list
- * query so US3's view refreshes. 422 field errors surface via ApiError
- * (mapped onto RHF fields by the form — see DynamicFieldRenderer / T035).
+ * query so US3's view refreshes. On a 422 the failed `http.post` throws an
+ * ApiError carrying field-level errors; AddressForm's mutate `onError` maps
+ * those onto the matching RHF fields (FR-017).
  */
 export function useCreateAddress() {
   const queryClient = useQueryClient();

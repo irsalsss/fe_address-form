@@ -46,6 +46,7 @@
   },
   "saved": {
     "title": "Alamat tersimpan",
-    "empty": "Belum ada alamat tersimpan."
+    "empty": "Belum ada alamat tersimpan.",
+    "error": "Gagal memuat alamat tersimpan. Silakan coba lagi."
   }
 }

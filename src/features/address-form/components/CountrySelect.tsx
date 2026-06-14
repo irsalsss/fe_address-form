@@ -21,7 +21,7 @@ export function CountrySelect() {
     <div className="grid gap-2">
       <Label htmlFor="country-select">{t("country.label")}</Label>
       <Select
-        value={selectedCountry ?? undefined}
+        value={selectedCountry ?? ""}
         onValueChange={(value) => setCountry(value as Country)}
       >
         <SelectTrigger id="country-select" className="w-full">

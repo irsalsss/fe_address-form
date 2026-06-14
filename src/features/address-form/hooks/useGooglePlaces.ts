@@ -44,7 +44,11 @@ function loadPlacesScript(apiKey: string): Promise<void> {
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Google Maps script failed to load"));
+    script.onerror = () => {
+      // Allow a later mount to retry instead of being stuck unavailable forever.
+      scriptPromise = null;
+      reject(new Error("Google Maps script failed to load"));
+    };
     document.head.appendChild(script);
   });
   return scriptPromise;

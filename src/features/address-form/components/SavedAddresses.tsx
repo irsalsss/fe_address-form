@@ -10,7 +10,7 @@ import { COUNTRY_CONFIGS } from "../config/country-config";
  */
 export function SavedAddresses() {
   const { t } = useTranslation("address-form");
-  const { data, isLoading } = useAddresses();
+  const { data, isLoading, isError } = useAddresses();
   const addresses = data?.data ?? [];
   const tr = t as unknown as (key: string) => string;
 
@@ -22,6 +22,10 @@ export function SavedAddresses() {
       <CardContent>
         {isLoading ? (
           <p className="text-muted-foreground text-sm">…</p>
+        ) : isError ? (
+          <p role="alert" className="text-destructive text-sm">
+            {t("saved.error")}
+          </p>
         ) : addresses.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("saved.empty")}</p>
         ) : (

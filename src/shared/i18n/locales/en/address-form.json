@@ -46,6 +46,7 @@
   },
   "saved": {
     "title": "Saved addresses",
-    "empty": "No saved addresses yet."
+    "empty": "No saved addresses yet.",
+    "error": "Could not load saved addresses. Please try again."
   }
 }

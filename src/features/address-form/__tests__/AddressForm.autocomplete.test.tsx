@@ -60,6 +60,10 @@ describe("AddressForm — autocomplete capture (US1)", () => {
         country: "USA",
         fields: expect.objectContaining({ zipCode: "94043", state: "CA" }),
       }),
+      expect.objectContaining({
+        onError: expect.any(Function),
+        onSuccess: expect.any(Function),
+      }),
     );
   });
 
