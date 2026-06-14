@@ -22,6 +22,8 @@ description: "Task list for Metadata-Driven Address Form"
 
 `src/features/address-form/components/AddressForm.tsx` is touched by US1, US2, US3, and US4. Those AddressForm edits are **sequential** (cannot be [P] with each other) even though the stories are otherwise independent. All other story work is parallelizable.
 
+**Deletion gate**: `config/country-config.ts` (T032) can only be deleted after every importer is migrated — `AddressForm` (T017), `CountrySelect` (T014), `DynamicFieldRenderer` (T015), `AddressConfirmation` (T016), `SavedAddresses` (T017a), `useCountryFields` (deleted T034), `usePlaceMapping` (T031). T032 is gated on all of these.
+
 ---
 
 ## Phase 1: Setup (Shared Infrastructure)
@@ -48,6 +50,7 @@ description: "Task list for Metadata-Driven Address Form"
 - [ ] T009 [P] Add `src/features/address-form/__tests__/lib/tDynamic.test.ts` — local hit, backend-label fallback, humanize last-resort, error-message-key path
 - [ ] T010 [P] Add `src/features/address-form/schemas/buildSchema.ts` — pure `buildSchema(fields: MetadataFieldDef[])` mapping `required`/`length`/`numeric`/`pattern`/`maxLength`/dropdown-option rules to a non-strict `z.object` of `z.string()`, messages as i18n keys (`errors.required`, `errors.length`, `errors.numeric`, `errors.pattern`, `errors.maxLength`, `errors.invalidOption`); export `buildResolver(fields)` returning `Resolver<AddressFormValues>` with the single contained cast (research R1/R2)
 - [ ] T011 [P] Add `src/features/address-form/__tests__/schemas/buildSchema.test.ts` — valid data passes; each rule's violation fails (non-5-digit numeric, missing required, bad pattern, over-maxLength, dropdown value not in options); optional empty field passes
+- [ ] T011a [P] Add `src/features/address-form/__tests__/api/useCountryMetadata.test.ts` — assert query key includes `version` and that a changed `version` produces a new key (refetch / cache invalidation, FR-003 / finding C1)
 
 **Checkpoint**: Data layer + utils exist and are unit-tested. User stories can begin.
 
@@ -70,6 +73,8 @@ description: "Task list for Metadata-Driven Address Form"
 - [ ] T015 [P] [US1] Rewrite `src/features/address-form/components/DynamicFieldRenderer.tsx` — accept `fields: MetadataFieldDef[]`; switch `type === "select"` → `"dropdown"`; resolve labels + error messages via `tDynamic` (pass `field.label`); keep aria associations
 - [ ] T016 [P] [US1] Rewrite `src/features/address-form/components/AddressConfirmation.tsx` — accept `fields: MetadataFieldDef[]`; resolve labels via `tDynamic`; same generic loop
 - [ ] T017 [US1] Edit `src/features/address-form/components/AddressForm.tsx` — replace `useCountryFields(country)` + `COUNTRY_CONFIGS` field list with metadata from `useCountryMetadata`; pass `metadata.fields` to renderer/confirmation; sort by `order` (or trust backend order)
+- [ ] T017a [US1] Migrate `src/features/address-form/components/SavedAddresses.tsx` off `COUNTRY_CONFIGS` — render saved rows generically. The list spans multiple countries, so resolve each row's field labels via `tDynamic`/`humanizeKey`; if per-country metadata is needed for ordering/labels, read it via `useCountryMetadata(address.country)` (cache already warm) or display `Object.entries(address.fields)` with `humanizeKey` fallback. This unblocks deleting `country-config.ts` (T032) without breaking the saved list / SC-004 (finding G1)
+- [ ] T017b [P] [US1] Update `src/features/address-form/__tests__/SavedAddresses.test.ts` — assert generic/fallback rendering without `COUNTRY_CONFIGS`
 - [ ] T018 [US1] Add i18n keys to `src/shared/i18n/locales/en/address-form.json` and `id/address-form.json` — generic validation messages `errors.length`/`errors.maxLength`/`errors.pattern` with interpolation; keep existing `fields.*` (now OPTIONAL overrides)
 
 **Checkpoint**: Form renders fully from metadata; new countries appear with no code change. MVP demoable.
@@ -145,7 +150,8 @@ description: "Task list for Metadata-Driven Address Form"
 - [ ] T033 [P] Delete `src/features/address-form/schemas/usa.ts`, `aus.ts`, `idn.ts`, and `schemas/index.ts`
 - [ ] T034 [P] Delete `src/features/address-form/hooks/useCountryFields.ts`
 - [ ] T035 [P] Delete tests `__tests__/schemas/usa.test.ts`, `aus.test.ts`, `idn.test.ts`, `__tests__/hooks/useCountryFields.test.ts`, `__tests__/registry-parity.test.ts`
-- [ ] T036 Update `src/features/address-form/types.ts` — drop config-derived/union types no longer used; keep `AddressFormValues = Record<string,string>`; reduce `Address`/`AddressResponse` to `Record<string,string>` unless `SavedAddresses.tsx` still needs the typed shape (verify usage)
+- [ ] T036 Update `src/features/address-form/types.ts` — delete `USAAddress`/`AUSAddress`/`IDNAddress`/`Address` union; set `CreateAddressRequest.fields` and `AddressResponse.fields` to `Record<string,string>`; keep `AddressFormValues = Record<string,string>` and `Country` (now `string`, since the country list is dynamic — verify no remaining literal-union dependency)
+- [ ] T036a Update `src/features/address-form/api/useCreateAddress.ts` (and confirm `api/useAddresses.ts`) for the `Record`-typed `CreateAddressRequest`/`AddressResponse`; remove the `as unknown as Address` cast in `AddressForm.tsx` submit (T021) now that `fields` is `Record<string,string>` (finding C3)
 - [ ] T037 Update `src/features/address-form/index.ts` — refresh public surface (remove deleted exports, add `buildSchema`/`useCountries` if exposed)
 - [ ] T038 Update `src/features/address-form/__tests__/i18n-parity.test.ts` — assert parity for static keys only; treat `fields.*` as optional overrides (dynamic labels resolved via fallback)
 - [ ] T039 Run gates: `pnpm lint`, `pnpm type-check`, `pnpm test:ci`, `pnpm test:e2e` — all green (Constitution quality gates)
@@ -163,7 +169,7 @@ description: "Task list for Metadata-Driven Address Form"
 - **US2 (Phase 4)**: after Foundational; shares `AddressForm.tsx` with US1 (T017 before T021)
 - **US3 (Phase 5)**: after Foundational; `AddressForm.tsx` edit (T025) after T017/T021
 - **US4 (Phase 6)**: after Foundational; `AddressForm.tsx` edit (T030) after T017/T021/T025
-- **Polish (Phase 7)**: after US1–US4 (components must no longer import the deleted config)
+- **Polish (Phase 7)**: after US1–US4 (components must no longer import the deleted config). T032 specifically gated on T014/T015/T016/T017/T017a/T031 + T034 (deletion gate above). T036a after T036.
 
 ### Critical same-file chain (AddressForm.tsx)
 
@@ -205,8 +211,9 @@ Task: "Rescope no-country-branches.test.ts (T013)"
 Task: "Rewrite CountrySelect.tsx (T014)"
 Task: "Rewrite DynamicFieldRenderer.tsx (T015)"
 Task: "Rewrite AddressConfirmation.tsx (T016)"
-# Finally the container:
+# Finally the container + saved list:
 Task: "Edit AddressForm.tsx field source (T017)"
+Task: "Migrate SavedAddresses.tsx off COUNTRY_CONFIGS (T017a)"   # [P] with T017 — different file
 ```
 
 ---
