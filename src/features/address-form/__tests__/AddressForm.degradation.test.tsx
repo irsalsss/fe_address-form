@@ -6,7 +6,14 @@ import { useAddressFormStore } from "../stores/addressFormStore";
 
 // Places unavailable (no key / script blocked).
 vi.mock("../hooks/useGooglePlaces", () => ({
-  useGooglePlaces: () => ({ inputRef: { current: null }, unavailable: true }),
+  useGooglePlaces: () => ({
+    query: "",
+    setQuery: vi.fn(),
+    predictions: [],
+    selectPrediction: vi.fn(),
+    loading: false,
+    unavailable: true,
+  }),
 }));
 
 vi.mock("../api/useCreateAddress", () => ({

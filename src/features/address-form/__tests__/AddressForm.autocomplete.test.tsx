@@ -14,7 +14,14 @@ const hoisted = vi.hoisted(() => ({
 vi.mock("../hooks/useGooglePlaces", () => ({
   useGooglePlaces: (opts: { onResult: (r: MappedPlace) => void }) => {
     hoisted.holder.onResult = opts.onResult;
-    return { inputRef: { current: null }, unavailable: false };
+    return {
+      query: "",
+      setQuery: vi.fn(),
+      predictions: [],
+      selectPrediction: vi.fn(),
+      loading: false,
+      unavailable: false,
+    };
   },
 }));
 

@@ -99,15 +99,17 @@ function CountryForm({ country }: { country: Country }) {
     return () => subscription.unsubscribe();
   }, [methods, setDraft]);
 
-  const { inputRef, unavailable } = useGooglePlaces({
-    country,
-    onResult: ({ fields: mapped, missingRequired: missing, placeId }) => {
-      methods.reset(mapped as Address);
-      setGooglePlaceId(placeId);
-      setMissingRequired(missing);
-      setCaptured(true);
+  const { query, setQuery, predictions, selectPrediction, loading, unavailable } = useGooglePlaces(
+    {
+      country,
+      onResult: ({ fields: mapped, missingRequired: missing, placeId }) => {
+        methods.reset(mapped as Address);
+        setGooglePlaceId(placeId);
+        setMissingRequired(missing);
+        setCaptured(true);
+      },
     },
-  });
+  );
 
   const onSubmit = methods.handleSubmit((values) => {
     create.mutate(
@@ -138,7 +140,14 @@ function CountryForm({ country }: { country: Country }) {
   return (
     <FormProvider {...methods}>
       <div className="grid gap-4">
-        <PlacesAutocomplete inputRef={inputRef} unavailable={unavailable} />
+        <PlacesAutocomplete
+          query={query}
+          onQueryChange={setQuery}
+          predictions={predictions}
+          onSelect={selectPrediction}
+          loading={loading}
+          unavailable={unavailable}
+        />
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <div className="flex justify-end">
             <Button

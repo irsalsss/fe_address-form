@@ -6,7 +6,14 @@ import { AddressForm } from "../components/AddressForm";
 import { useAddressFormStore } from "../stores/addressFormStore";
 
 vi.mock("../hooks/useGooglePlaces", () => ({
-  useGooglePlaces: () => ({ inputRef: { current: null }, unavailable: false }),
+  useGooglePlaces: () => ({
+    query: "",
+    setQuery: vi.fn(),
+    predictions: [],
+    selectPrediction: vi.fn(),
+    loading: false,
+    unavailable: false,
+  }),
 }));
 vi.mock("../api/useCreateAddress", () => ({
   useCreateAddress: () => ({ mutate: vi.fn(), isPending: false, isError: false, isSuccess: false }),

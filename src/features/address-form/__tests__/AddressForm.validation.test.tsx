@@ -8,7 +8,14 @@ import { useAddressFormStore } from "../stores/addressFormStore";
 const hoisted = vi.hoisted(() => ({ mutate: vi.fn() }));
 
 vi.mock("../hooks/useGooglePlaces", () => ({
-  useGooglePlaces: () => ({ inputRef: { current: null }, unavailable: false }),
+  useGooglePlaces: () => ({
+    query: "",
+    setQuery: vi.fn(),
+    predictions: [],
+    selectPrediction: vi.fn(),
+    loading: false,
+    unavailable: false,
+  }),
 }));
 vi.mock("../api/useCreateAddress", () => ({
   useCreateAddress: () => ({

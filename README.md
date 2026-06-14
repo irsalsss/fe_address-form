@@ -7,6 +7,7 @@ Vite + React + TypeScript + Tailwind v4 + shadcn/ui
 ```bash
 pnpm install
 pnpm dev          # http://localhost:3001
+go to http://localhost:3001/onboarding/address
 ```
 
 ## Commands

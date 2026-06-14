@@ -10,7 +10,8 @@
     "label": "Cari alamat",
     "placeholder": "Mulai ketik alamat Anda…",
     "unavailable": "Pencarian alamat tidak tersedia — silakan masukkan alamat secara manual.",
-    "selectCountryFirst": "Pilih negara sebelum mencari."
+    "selectCountryFirst": "Pilih negara sebelum mencari.",
+    "searching": "Mencari…"
   },
   "manualEdit": "Edit Manual",
   "submit": "Simpan alamat",

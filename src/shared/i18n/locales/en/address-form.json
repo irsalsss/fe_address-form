@@ -10,7 +10,8 @@
     "label": "Search address",
     "placeholder": "Start typing your address…",
     "unavailable": "Address search is unavailable — please enter your address manually.",
-    "selectCountryFirst": "Select a country before searching."
+    "selectCountryFirst": "Select a country before searching.",
+    "searching": "Searching…"
   },
   "manualEdit": "Manually Edit",
   "submit": "Save address",
