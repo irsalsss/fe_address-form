@@ -115,7 +115,7 @@ function CountryForm({ country }: { country: Country }) {
     create.mutate(
       { country, fields: values as Address, googlePlaceId },
       {
-        // Surface server-side field errors (422) on the matching fields (FR-017).
+        // Surface server-side field errors (400 BAD_REQUEST) on matching fields (FR-017).
         onError: (error) => {
           if (error instanceof ApiError) {
             for (const fieldError of error.fieldErrors) {

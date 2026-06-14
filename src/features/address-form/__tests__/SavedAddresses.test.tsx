@@ -7,7 +7,7 @@ vi.mock("../api/useAddresses", () => ({
   useAddresses: () => ({
     isLoading: false,
     data: {
-      data: [
+      addresses: [
         {
           id: "1",
           country: "USA",

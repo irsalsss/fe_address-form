@@ -1,6 +1,10 @@
 import { env } from "@/shared/config/env";
 
-/** Field-level error returned by the API (RFC 7807 problem+json `errors[]`). */
+/**
+ * Field-level error mapped from the API's problem+json `details.fieldErrors`
+ * (Zod `flatten()`). `field` is a registry field key (zip, street, …) and maps
+ * 1:1 onto a React Hook Form field name.
+ */
 export interface FieldError {
   field: string;
   message: string;
@@ -9,19 +13,32 @@ export interface FieldError {
 export class ApiError extends Error {
   readonly status: number;
   readonly fieldErrors: FieldError[];
+  /** Non-field-level messages (country-level / whole-body). Surface in banner. */
+  readonly formErrors: string[];
 
-  constructor(status: number, message: string, fieldErrors: FieldError[] = []) {
+  constructor(
+    status: number,
+    message: string,
+    fieldErrors: FieldError[] = [],
+    formErrors: string[] = [],
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.fieldErrors = fieldErrors;
+    this.formErrors = formErrors;
   }
 }
 
+/** RFC 7807 problem+json body. Validation errors live under `details` (Zod flatten). */
 interface ProblemBody {
   title?: string;
   detail?: string;
-  errors?: FieldError[];
+  code?: string;
+  details?: {
+    formErrors?: string[];
+    fieldErrors?: Record<string, string[]>;
+  };
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -38,10 +55,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       body = null;
     }
+    const fieldErrors: FieldError[] = Object.entries(
+      body?.details?.fieldErrors ?? {},
+    ).map(([field, msgs]) => ({ field, message: msgs[0] ?? "Invalid" }));
     throw new ApiError(
       res.status,
-      body?.title ?? body?.detail ?? res.statusText,
-      body?.errors ?? [],
+      body?.detail ?? body?.title ?? res.statusText,
+      fieldErrors,
+      body?.details?.formErrors ?? [],
     );
   }
 

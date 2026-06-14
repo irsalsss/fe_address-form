@@ -6,19 +6,26 @@ info:
     Country-aware address capture. Validates and persists addresses for
     USA / AUS / IDN, and exposes per-country field + validation metadata so
     dynamic clients render any supported country without redeploying.
+
+    This document is reconciled against the backend implementation
+    (be/src/features/*). The backend registry
+    (be/src/features/countries/registry.ts) is the SINGLE SOURCE OF TRUTH for
+    field keys + validation; its `.strict()` submit validator rejects unknown
+    keys, so payload keys MUST match the registry (never derive them from labels).
 servers:
   - url: http://localhost:4000
-    description: Local dev (BE scaffold default PORT=4000)
+    description: Local dev (BE default PORT=4000). All routes are under /api/v1.
 
 paths:
-  /addresses:
+  /api/v1/addresses:
     post:
       operationId: createAddress
       summary: Create (validate + persist) an address
       description: >
-        Server re-validates the payload against the country's schema before
-        persisting. Invalid payloads are rejected (422) with field-level errors
-        and nothing is stored. (FR-016, FR-017)
+        Server re-validates `fields` against the country's registry-derived
+        strict schema before persisting. Invalid payloads are rejected with 400
+        (code BAD_REQUEST) and nothing is stored. Unknown field keys, missing
+        required fields, and bad formats/enums all 400. (FR-016, FR-017)
       requestBody:
         required: true
         content:
@@ -32,57 +39,115 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Address"
-        "422":
-          description: Validation failed (required/format/enum) — no row written
+        "400":
+          description: >
+            Validation failed (unknown key / required missing / format / enum)
+            or unsupported country — no row written. Field-level Zod errors are
+            in `details` (see ProblemDetails).
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ValidationProblem"
+                $ref: "#/components/schemas/ProblemDetails"
     get:
       operationId: listAddresses
       summary: List saved addresses (demo retrieval)
-      description: Returns all saved addresses, each with its country and full field set intact. (FR-018, SC-004)
+      description: Returns saved addresses with their country and full field set intact. (FR-018, SC-004)
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - in: query
+          name: offset
+          required: false
+          schema: { type: integer, minimum: 0, default: 0 }
       responses:
         "200":
-          description: Saved addresses
+          description: Saved addresses (paged)
           content:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [addresses, limit, offset]
                 properties:
-                  data:
+                  addresses:
                     type: array
                     items:
                       $ref: "#/components/schemas/Address"
+                  limit: { type: integer }
+                  offset: { type: integer }
 
-  /addresses/metadata:
+  /api/v1/addresses/{id}:
     get:
-      operationId: getCountryMetadata
-      summary: Per-country field definitions + validation rules (bonus, FR-019)
-      description: >
-        The dynamic-metadata contract. Returns the ordered field descriptors,
-        required flags, formats, and dropdown options for each supported country.
+      operationId: getAddressById
+      summary: Fetch a single saved address
       parameters:
-        - in: query
-          name: country
-          required: false
-          schema:
-            $ref: "#/components/schemas/Country"
-          description: Optional filter to a single country
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
       responses:
         "200":
-          description: Country metadata
+          description: Address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+        "404":
+          description: No address with that id
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+
+  /api/v1/countries:
+    get:
+      operationId: listCountries
+      summary: List supported countries (code + name)
+      responses:
+        "200":
+          description: Supported countries
           content:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [countries]
                 properties:
-                  data:
+                  countries:
                     type: array
                     items:
-                      $ref: "#/components/schemas/CountryConfig"
+                      $ref: "#/components/schemas/CountrySummary"
+
+  /api/v1/countries/{code}/fields:
+    get:
+      operationId: getCountryFields
+      summary: Per-country field definitions + validation rules (FR-019)
+      description: >
+        The dynamic-metadata contract. Returns the ordered field descriptors,
+        required flags, dropdown options, and validation rules for one country.
+        `label` is plain English (display reference only) — localized clients
+        render their own i18n labels keyed by `key`.
+      parameters:
+        - in: path
+          name: code
+          required: true
+          description: >
+            Country code. Canonical alpha-3 (USA/AUS/IDN) or alpha-2 alias
+            (US/AU/ID) — both resolve.
+          schema: { type: string, example: IDN }
+      responses:
+        "200":
+          description: Country field metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountryFields"
+        "404":
+          description: Unsupported country
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
 
 components:
   schemas:
@@ -90,53 +155,79 @@ components:
       type: string
       enum: [USA, AUS, IDN]
 
-    FieldDescriptor:
+    CountrySummary:
       type: object
-      required: [key, labelKey, type, required]
+      required: [code, name]
+      properties:
+        code:
+          $ref: "#/components/schemas/Country"
+        name: { type: string, example: Indonesia }
+
+    FieldOption:
+      type: object
+      required: [value, label]
+      properties:
+        value: { type: string, example: DKI Jakarta }
+        label: { type: string, example: DKI Jakarta }
+
+    FieldValidation:
+      type: object
+      description: >
+        Validation rules applied to the value. `pattern` (regex source) overrides
+        length/numeric when present. Free-text fields default to maxLength 200.
+      properties:
+        length: { type: integer, minimum: 1, description: exact character length }
+        numeric: { type: boolean, description: digits only }
+        pattern: { type: string, description: explicit regex source }
+        maxLength: { type: integer, minimum: 1 }
+
+    FieldDef:
+      type: object
+      required: [key, label, required, type, order]
       properties:
         key:
           type: string
-          description: backend registry key — the payload key (e.g. zip, line1, street)
+          description: >
+            Registry key — this IS the submit payload key (e.g. line1, zip,
+            street, postalCode). Never derived from the label.
           example: zip
-        labelKey:
+        label:
           type: string
-          description: i18n key in the address-form namespace (display only)
-          example: fields.zipCode
+          description: plain-English display reference (clients localize via key)
+          example: ZIP Code
+        required: { type: boolean }
         type:
           type: string
-          enum: [text, select]
-        required:
-          type: boolean
-        format:
-          type: string
-          description: format-rule id applied to the value
-          enum: [zip5, postcode4, postal5]
+          enum: [text, dropdown]
         options:
           type: array
-          description: present when type=select
+          description: present when type=dropdown
           items:
-            type: object
-            required: [value, labelKey]
-            properties:
-              value:
-                type: string
-              labelKey:
-                type: string
+            $ref: "#/components/schemas/FieldOption"
+        validation:
+          $ref: "#/components/schemas/FieldValidation"
+        order:
+          type: integer
+          minimum: 0
+          description: render order (0-based); order is significant
 
-    CountryConfig:
+    CountryFields:
       type: object
-      required: [country, fields]
+      required: [code, name, fields]
       properties:
-        country:
+        code:
           $ref: "#/components/schemas/Country"
+        name: { type: string }
         fields:
           type: array
-          description: ordered field descriptors (order is significant)
+          description: ordered field descriptors
           items:
-            $ref: "#/components/schemas/FieldDescriptor"
+            $ref: "#/components/schemas/FieldDef"
 
+    # --- Per-country submitted field shapes ---
     # Keys MUST match the backend registry (be/src/features/countries/registry.ts),
-    # which the .strict() submit validator derives from. Never rename to match labels.
+    # from which the .strict() submit validator is derived. additionalProperties:false
+    # mirrors that strictness (unknown keys 400).
     UsaFields:
       type: object
       required: [line1, city, state, zip]
@@ -144,7 +235,7 @@ components:
         line1: { type: string, minLength: 1, description: Address Line 1 }
         line2: { type: string, description: Address Line 2 }
         city: { type: string, minLength: 1 }
-        state: { type: string, description: 2-letter US state code }
+        state: { type: string, description: 2-letter US state/DC code }
         zip: { type: string, pattern: "^\\d{5}$", description: ZIP Code }
       additionalProperties: false
 
@@ -176,20 +267,21 @@ components:
     CreateAddressRequest:
       type: object
       required: [country, fields]
+      description: >
+        Backend body schema is `{ country, fields }`; `fields` is parsed by the
+        country's strict registry validator. Any extra top-level properties
+        (e.g. googlePlaceId) are accepted but stripped — not persisted.
       properties:
         country:
-          $ref: "#/components/schemas/Country"
-        googlePlaceId:
           type: string
-          description: optional, set when address came from autocomplete
+          description: USA/AUS/IDN (or alias US/AU/ID)
+          example: IDN
         fields:
           oneOf:
             - $ref: "#/components/schemas/UsaFields"
             - $ref: "#/components/schemas/AusFields"
             - $ref: "#/components/schemas/IdnFields"
           description: shape MUST match the discriminating country
-      discriminator:
-        propertyName: country
 
     Address:
       type: object
@@ -209,20 +301,31 @@ components:
           type: string
           format: date-time
 
-    ValidationProblem:
+    ProblemDetails:
       type: object
-      description: RFC 7807 problem+json with field-level errors
-      required: [title, status]
+      description: >
+        problem+json error body (be/src/shared/http/problem.ts). Validation
+        failures are status 400 / code BAD_REQUEST with the Zod `flatten()`
+        output under `details` ({ formErrors, fieldErrors }). There is no
+        top-level `errors[]` array.
+      required: [type, title, status, code]
       properties:
         type: { type: string, default: about:blank }
-        title: { type: string, example: Validation failed }
-        status: { type: integer, example: 422 }
-        detail: { type: string }
-        errors:
-          type: array
-          items:
-            type: object
-            required: [field, message]
-            properties:
-              field: { type: string, example: zip }
-              message: { type: string, example: must be 5 digits }
+        title: { type: string, description: same as code, example: BAD_REQUEST }
+        status: { type: integer, example: 400 }
+        detail: { type: string, example: validation failed }
+        instance: { type: string, description: request url }
+        code:
+          type: string
+          enum: [BAD_REQUEST, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, CONFLICT, INTERNAL]
+        details:
+          description: >
+            Error-specific payload. For body validation it is the Zod flatten:
+            { formErrors: string[], fieldErrors: Record<key, string[]> }.
+          type: object
+          additionalProperties: true
+          example:
+            formErrors: []
+            fieldErrors:
+              zip: ["Invalid"]
+              street: ["Required"]

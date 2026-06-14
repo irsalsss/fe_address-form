@@ -4,7 +4,9 @@ import type { AddressResponse } from "../types";
 import { addressesQueryKey } from "./useCreateAddress";
 
 interface AddressesResponse {
-  data: AddressResponse[];
+  addresses: AddressResponse[];
+  limit: number;
+  offset: number;
 }
 
 /**

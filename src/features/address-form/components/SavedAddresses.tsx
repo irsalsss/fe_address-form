@@ -11,7 +11,7 @@ import { COUNTRY_CONFIGS } from "../config/country-config";
 export function SavedAddresses() {
   const { t } = useTranslation("address-form");
   const { data, isLoading, isError } = useAddresses();
-  const addresses = data?.data ?? [];
+  const addresses = data?.addresses ?? [];
   const tr = t as unknown as (key: string) => string;
 
   return (
