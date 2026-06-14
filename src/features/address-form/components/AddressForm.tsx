@@ -27,6 +27,7 @@ import { PlacesAutocomplete } from "./PlacesAutocomplete";
 export function AddressForm() {
   const { t } = useTranslation("address-form");
   const selectedCountry = useAddressFormStore((s) => s.selectedCountry);
+  const submitSuccess = useAddressFormStore((s) => s.submitSuccess);
 
   return (
     <Card className="mx-auto w-full max-w-xl">
@@ -34,6 +35,13 @@ export function AddressForm() {
         <CardTitle>{t("country.label")}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-6">
+        {/* Success lives here (not in the form): a successful save blanks the
+            country, which unmounts the form before any inline message shows. */}
+        {submitSuccess && !selectedCountry && (
+          <p role="status" className="text-sm text-green-600">
+            {t("submitSuccess")}
+          </p>
+        )}
         <CountrySelect />
         {selectedCountry ? (
           <CountryFormGate country={selectedCountry} />
@@ -93,6 +101,7 @@ function CountryForm({ country, fields }: { country: string; fields: MetadataFie
   const setDraft = useAddressFormStore((s) => s.setDraft);
   const manualEdit = useAddressFormStore((s) => s.manualEdit);
   const setManualEdit = useAddressFormStore((s) => s.setManualEdit);
+  const completeSubmit = useAddressFormStore((s) => s.completeSubmit);
 
   const [captured, setCaptured] = useState(false);
   const [missingRequired, setMissingRequired] = useState<string[]>([]);
@@ -161,12 +170,11 @@ function CountryForm({ country, fields }: { country: string; fields: MetadataFie
             if (unmatched.length > 0) setFormError(unmatched.join(" "));
           }
         },
-        // Clear the form after a successful save so the same address can't be re-posted.
+        // Full reset on success: blank country + search + fields so the same
+        // address can't be re-posted. This unmounts the form (selectedCountry
+        // → null); success is shown by the banner in AddressForm.
         onSuccess: () => {
-          methods.reset(emptyValues);
-          setGooglePlaceId(undefined);
-          setCaptured(false);
-          setMissingRequired([]);
+          completeSubmit();
         },
       },
     );
@@ -207,11 +215,6 @@ function CountryForm({ country, fields }: { country: string; fields: MetadataFie
           {(create.isError || formError) && (
             <p role="alert" className="text-destructive text-sm">
               {formError ?? t("submitError")}
-            </p>
-          )}
-          {create.isSuccess && (
-            <p role="status" className="text-sm text-green-600">
-              {t("submitSuccess")}
             </p>
           )}
         </form>
