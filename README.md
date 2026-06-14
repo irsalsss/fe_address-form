@@ -146,3 +146,11 @@ prompt: initiate Vite, React, Typescript, Tailwind v4, shadcn/ui, unit test usin
 ```
 /speckit-tasks
 ```
+7. Run in terminal agents (for cross-check spec↔plan↔tasks):
+```
+/speckit-analyze
+```
+8. If something need to be added, simply rerun in terminal agents:
+```
+/speckit-tasks
+```
