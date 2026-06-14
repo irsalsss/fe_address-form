@@ -1,0 +1,233 @@
+---
+description: "Task list for Metadata-Driven Address Form"
+---
+
+# Tasks: Metadata-Driven Address Form
+
+**Input**: Design documents from `/specs/002-metadata-driven-form/`
+
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/metadata-endpoints.md, quickstart.md
+
+**Tests**: INCLUDED — Constitution VI (Test Discipline) is non-negotiable and spec acceptance requires schema-builder unit tests, integration tests, and the existing E2E flow passing.
+
+**Organization**: Grouped by user story (US1–US4 from spec.md) for independent implementation and testing.
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: Can run in parallel (different files, no dependencies)
+- **[Story]**: US1, US2, US3, US4
+- All paths relative to repo root `/Users/irsal/Desktop/frankieone/fe/`
+
+## ⚠️ Same-file ordering note
+
+`src/features/address-form/components/AddressForm.tsx` is touched by US1, US2, US3, and US4. Those AddressForm edits are **sequential** (cannot be [P] with each other) even though the stories are otherwise independent. All other story work is parallelizable.
+
+---
+
+## Phase 1: Setup (Shared Infrastructure)
+
+**Purpose**: Prepare for metadata-driven work without breaking the current build.
+
+- [ ] T001 Confirm work is on branch `002-metadata-driven-form` and `.specify/feature.json` points to `specs/002-metadata-driven-form` (already set)
+- [ ] T002 Create feature-local helper folder `src/features/address-form/lib/` for the i18n fallback utilities
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**Purpose**: Shared data layer + utilities every user story consumes. Each is a leaf module with its own unit test; none import the old local config.
+
+**⚠️ CRITICAL**: No user story phase can complete until this phase is done.
+
+- [ ] T003 [P] Add `src/features/address-form/api/useCountries.ts` — TanStack Query hook for `GET /countries` returning `CountryListEntry[]` (`{code,name,version?}`), per contracts/metadata-endpoints.md; query key `["countries"]`, long `staleTime`
+- [ ] T004 [P] Add `src/features/address-form/__tests__/api/useCountries.test.ts` — mock http, assert list shape + query key
+- [ ] T005 Update `src/features/address-form/api/useCountryMetadata.ts` — accept optional `version` into query key `["country-metadata", code, version]`, set finite `staleTime` (≥5min) as fallback, drop the registry-parity reconciliation comment; keep `MetadataFieldDef`/`CountryFieldsResponse` types exported (add optional `version` to `CountryFieldsResponse`)
+- [ ] T006 [P] Add `src/features/address-form/lib/humanizeKey.ts` — pure `humanizeKey(key: string): string` splitting camelCase/snake/kebab and title-casing (e.g. `postalCode` → "Postal Code")
+- [ ] T007 [P] Add `src/features/address-form/__tests__/lib/humanizeKey.test.ts` — camelCase, snake_case, kebab-case, single word cases
+- [ ] T008 [P] Add `src/features/address-form/lib/tDynamic.ts` — `tDynamic(t, key, backendLabel?)` resolving `fields.<key>` local translation → `backendLabel` → `humanizeKey(key)` using i18next `defaultValue`; same helper usable for `errors.*` message keys (research R4)
+- [ ] T009 [P] Add `src/features/address-form/__tests__/lib/tDynamic.test.ts` — local hit, backend-label fallback, humanize last-resort, error-message-key path
+- [ ] T010 [P] Add `src/features/address-form/schemas/buildSchema.ts` — pure `buildSchema(fields: MetadataFieldDef[])` mapping `required`/`length`/`numeric`/`pattern`/`maxLength`/dropdown-option rules to a non-strict `z.object` of `z.string()`, messages as i18n keys (`errors.required`, `errors.length`, `errors.numeric`, `errors.pattern`, `errors.maxLength`, `errors.invalidOption`); export `buildResolver(fields)` returning `Resolver<AddressFormValues>` with the single contained cast (research R1/R2)
+- [ ] T011 [P] Add `src/features/address-form/__tests__/schemas/buildSchema.test.ts` — valid data passes; each rule's violation fails (non-5-digit numeric, missing required, bad pattern, over-maxLength, dropdown value not in options); optional empty field passes
+
+**Checkpoint**: Data layer + utils exist and are unit-tested. User stories can begin.
+
+---
+
+## Phase 3: User Story 1 — Add/change a country without a frontend deploy (Priority: P1) 🎯 MVP
+
+**Goal**: Country dropdown + form render entirely from backend metadata, with label fallback. Adding a country becomes a backend-only change.
+
+**Independent Test**: Point the app at a backend whose registry includes a new/changed country; reload without rebuilding; the country appears in the dropdown and its fields render in backend order with correct labels (local translation → backend label → humanized key).
+
+### Tests for User Story 1
+
+- [ ] T012 [P] [US1] Add `src/features/address-form/__tests__/AddressForm.metadata-render.test.tsx` — mock `useCountries` + `useCountryMetadata`; select a country, assert fields render in `order` with dropdown vs text per metadata `type`, and labels use translation/backend-label/humanize fallback
+- [ ] T013 [P] [US1] Update `src/features/address-form/__tests__/no-country-branches.test.ts` — scope assertion to render/confirmation components (`AddressForm`, `DynamicFieldRenderer`, `AddressConfirmation`, `CountrySelect`); explicitly exempt `usePlaceMapping`
+
+### Implementation for User Story 1
+
+- [ ] T014 [P] [US1] Rewrite `src/features/address-form/components/CountrySelect.tsx` — source options from `useCountries` (loading/empty handled minimally); label each via `t(\`country.${code}\`, { defaultValue: name })`; remove `COUNTRIES` import
+- [ ] T015 [P] [US1] Rewrite `src/features/address-form/components/DynamicFieldRenderer.tsx` — accept `fields: MetadataFieldDef[]`; switch `type === "select"` → `"dropdown"`; resolve labels + error messages via `tDynamic` (pass `field.label`); keep aria associations
+- [ ] T016 [P] [US1] Rewrite `src/features/address-form/components/AddressConfirmation.tsx` — accept `fields: MetadataFieldDef[]`; resolve labels via `tDynamic`; same generic loop
+- [ ] T017 [US1] Edit `src/features/address-form/components/AddressForm.tsx` — replace `useCountryFields(country)` + `COUNTRY_CONFIGS` field list with metadata from `useCountryMetadata`; pass `metadata.fields` to renderer/confirmation; sort by `order` (or trust backend order)
+- [ ] T018 [US1] Add i18n keys to `src/shared/i18n/locales/en/address-form.json` and `id/address-form.json` — generic validation messages `errors.length`/`errors.maxLength`/`errors.pattern` with interpolation; keep existing `fields.*` (now OPTIONAL overrides)
+
+**Checkpoint**: Form renders fully from metadata; new countries appear with no code change. MVP demoable.
+
+---
+
+## Phase 4: User Story 2 — Fill, validate, submit for any country (Priority: P1)
+
+**Goal**: Runtime-built validation matches the backend; valid data submits and saves, invalid data blocks with per-field errors; server field errors map back.
+
+**Independent Test**: For each supported country, valid data submits and appears in the saved list; invalid (wrong-length postal, missing required) blocks with per-field errors; a forced backend rejection surfaces on the matching field.
+
+### Tests for User Story 2
+
+- [ ] T019 [P] [US2] Update `src/features/address-form/__tests__/AddressForm.validation.test.tsx` — mock metadata; assert required + format errors from the built schema surface per field, and submit is blocked
+- [ ] T020 [P] [US2] Update `src/features/address-form/__tests__/AddressForm.manual.test.tsx` — fill valid manual values, submit succeeds with `Record`-shaped payload; assert server `fieldErrors` map onto fields
+
+### Implementation for User Story 2
+
+- [ ] T021 [US2] Edit `src/features/address-form/components/AddressForm.tsx` — build resolver via `buildResolver(metadata.fields)` (`useMemo` on fields) replacing `addressResolver(country)`; keep `defaultValues` controlled (`""` per field); submit `{ country, fields: values, googlePlaceId }`; retain `ApiError.fieldErrors` → `setError` mapping (FR-011)
+- [ ] T022 [US2] Handle server errors referencing non-rendered keys in `AddressForm.tsx` — collect unmatched `fieldErrors`/`formErrors` into the existing banner instead of dropping/crashing (edge case)
+
+**Checkpoint**: End-to-end submit + validation works for all countries via metadata-built schema.
+
+---
+
+## Phase 5: User Story 3 — Resilient loading / error / retry (Priority: P2)
+
+**Goal**: Metadata fetch has explicit loading and error+retry states; form no longer assumes synchronous data.
+
+**Independent Test**: Slow metadata → loading indicator; failed metadata → error + Retry that recovers without reload; countries-list failure scoped to the dropdown.
+
+### Tests for User Story 3
+
+- [ ] T023 [P] [US3] Add `src/features/address-form/__tests__/AddressForm.loading.test.tsx` — mock `useCountryMetadata` in `isPending` (loading shown), `isError` + `refetch` (error + Retry recovers); assert no crash and no page reload
+
+### Implementation for User Story 3
+
+- [ ] T024 [P] [US3] Add `src/features/address-form/components/MetadataState.tsx` — presentational loading + error/retry wrapper (accessible: `role="status"` / `role="alert"` + Retry button), i18n strings
+- [ ] T025 [US3] Edit `src/features/address-form/components/AddressForm.tsx` — branch on metadata `isPending`/`isError` via `MetadataState` (Retry → `refetch`); render form only on success
+- [ ] T026 [US3] Scope countries-list failure in `CountrySelect.tsx` — disable dropdown + show error without blocking an already-loaded country form (edge case)
+- [ ] T027 [P] [US3] Add i18n keys for loading/error/retry to `en/address-form.json` + `id/address-form.json` (`state.loading`, `state.error`, `state.retry`)
+
+**Checkpoint**: Form degrades gracefully on slow/failed metadata.
+
+---
+
+## Phase 6: User Story 4 — Country switch carry-over + autocomplete (Priority: P2)
+
+**Goal**: Switching country carries shared text fields, not selects; Google Places keeps populating by metadata keys.
+
+**Independent Test**: Enter text + a dropdown for country A, switch to B → text carries, dropdown cleared; autocomplete populates active country's fields by metadata key; partial results flag missing required.
+
+### Tests for User Story 4
+
+- [ ] T028 [P] [US4] Update `src/features/address-form/__tests__/AddressForm.carryover.test.tsx` — mock metadata for two countries; assert shared text carries over, dropdown value does not
+- [ ] T029 [P] [US4] Update `src/features/address-form/__tests__/AddressForm.autocomplete.test.tsx` — assert mapped place populates fields by metadata key and `missingRequired` derives from metadata
+
+### Implementation for User Story 4
+
+- [ ] T030 [US4] Edit `src/features/address-form/components/AddressForm.tsx` — `seedFromDraft` + `emptyValues` iterate `metadata.fields` (skip `type === "dropdown"` for carry-over), removing `COUNTRY_CONFIGS` (FR-015 / research R8)
+- [ ] T031 [P] [US4] Edit `src/features/address-form/hooks/usePlaceMapping.ts` — compute `missingRequired` from metadata fields (passed in / read from cache) instead of `COUNTRY_CONFIGS`; keep the country-specific component-type mapping (exempt from no-branch rule)
+
+**Checkpoint**: Carry-over + autocomplete behavior preserved on metadata keys.
+
+---
+
+## Phase 7: Polish & Cleanup (Delete hardcoded country data)
+
+**Purpose**: Remove now-dead local country data + tests (SC-002) and run all gates. Do these only after Phases 3–6 compile against metadata.
+
+- [ ] T032 [P] Delete `src/features/address-form/config/country-config.ts` and `src/features/address-form/config/options.ts`
+- [ ] T033 [P] Delete `src/features/address-form/schemas/usa.ts`, `aus.ts`, `idn.ts`, and `schemas/index.ts`
+- [ ] T034 [P] Delete `src/features/address-form/hooks/useCountryFields.ts`
+- [ ] T035 [P] Delete tests `__tests__/schemas/usa.test.ts`, `aus.test.ts`, `idn.test.ts`, `__tests__/hooks/useCountryFields.test.ts`, `__tests__/registry-parity.test.ts`
+- [ ] T036 Update `src/features/address-form/types.ts` — drop config-derived/union types no longer used; keep `AddressFormValues = Record<string,string>`; reduce `Address`/`AddressResponse` to `Record<string,string>` unless `SavedAddresses.tsx` still needs the typed shape (verify usage)
+- [ ] T037 Update `src/features/address-form/index.ts` — refresh public surface (remove deleted exports, add `buildSchema`/`useCountries` if exposed)
+- [ ] T038 Update `src/features/address-form/__tests__/i18n-parity.test.ts` — assert parity for static keys only; treat `fields.*` as optional overrides (dynamic labels resolved via fallback)
+- [ ] T039 Run gates: `pnpm lint`, `pnpm type-check`, `pnpm test:ci`, `pnpm test:e2e` — all green (Constitution quality gates)
+- [ ] T040 Execute quickstart.md V1–V8 validation against a running backend
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+- **Setup (Phase 1)**: no deps
+- **Foundational (Phase 2)**: after Setup — BLOCKS all stories
+- **US1 (Phase 3)**: after Foundational — MVP
+- **US2 (Phase 4)**: after Foundational; shares `AddressForm.tsx` with US1 (T017 before T021)
+- **US3 (Phase 5)**: after Foundational; `AddressForm.tsx` edit (T025) after T017/T021
+- **US4 (Phase 6)**: after Foundational; `AddressForm.tsx` edit (T030) after T017/T021/T025
+- **Polish (Phase 7)**: after US1–US4 (components must no longer import the deleted config)
+
+### Critical same-file chain (AddressForm.tsx)
+
+T017 (US1) → T021/T022 (US2) → T025 (US3) → T030 (US4). Sequential.
+
+### Within each story
+
+- Tests written first and expected to fail, then implementation (Constitution VI).
+- Foundational utils (Phase 2) before any component wiring.
+
+### Parallel Opportunities
+
+- Phase 2: T003/T004, T006/T007, T008/T009, T010/T011 are independent leaf modules — run in parallel (T005 also parallel; it only edits the metadata hook).
+- US1: T012/T013 (tests), then T014/T015/T016 (different files) in parallel; T017 last.
+- US2: T019/T020 parallel; T021 then T022.
+- US3: T023 + T024 + T027 parallel; T025/T026 after.
+- US4: T028/T029 parallel; T031 parallel with T030 (different files).
+- Phase 7: T032–T035 deletions all parallel; then T036–T038; then gates.
+
+---
+
+## Parallel Example: Foundational (Phase 2)
+
+```bash
+Task: "Add useCountries.ts + test (T003, T004)"
+Task: "Add humanizeKey.ts + test (T006, T007)"
+Task: "Add tDynamic.ts + test (T008, T009)"
+Task: "Add buildSchema.ts + test (T010, T011)"
+Task: "Update useCountryMetadata.ts version cache (T005)"
+```
+
+## Parallel Example: User Story 1
+
+```bash
+# Tests first:
+Task: "AddressForm.metadata-render.test.tsx (T012)"
+Task: "Rescope no-country-branches.test.ts (T013)"
+# Then components (different files):
+Task: "Rewrite CountrySelect.tsx (T014)"
+Task: "Rewrite DynamicFieldRenderer.tsx (T015)"
+Task: "Rewrite AddressConfirmation.tsx (T016)"
+# Finally the container:
+Task: "Edit AddressForm.tsx field source (T017)"
+```
+
+---
+
+## Implementation Strategy
+
+### MVP First (US1 only)
+
+1. Phase 1 Setup → 2. Phase 2 Foundational → 3. Phase 3 US1 → **STOP & VALIDATE** (country renders from metadata, new country needs no code change) → demo.
+
+### Incremental Delivery
+
+Foundation → US1 (metadata render, MVP) → US2 (validation/submit) → US3 (loading/retry) → US4 (carry-over/autocomplete) → Phase 7 cleanup + gates. Each story independently testable; cleanup deletes dead config only after migration compiles.
+
+---
+
+## Notes
+
+- [P] = different files, no incomplete dependency.
+- `AddressForm.tsx` is the serialization point across stories — keep its edits ordered.
+- Deletions (Phase 7) are deferred deliberately: removing config before components migrate breaks the build.
+- `usePlaceMapping` country branches are intentional mapping logic, exempt from the no-render-branch rule (research R6).
+- Backend `version` field (cache invalidation) is a Block 1 dependency; client degrades to `staleTime` if absent.
+- Commit after each task or logical group; verify tests fail before implementing.
