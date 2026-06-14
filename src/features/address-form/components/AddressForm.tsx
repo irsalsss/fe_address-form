@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateAddress } from "../api/useCreateAddress";
+import { COUNTRY_CONFIGS } from "../config/country-config";
 import { useCountryFields } from "../hooks/useCountryFields";
 import { useGooglePlaces } from "../hooks/useGooglePlaces";
 import { addressResolver } from "../schemas";
@@ -13,16 +14,14 @@ import { useAddressFormStore } from "../stores/addressFormStore";
 import type { Address, Country } from "../types";
 import { AddressConfirmation } from "./AddressConfirmation";
 import { CountrySelect } from "./CountrySelect";
+import { DynamicFieldRenderer } from "./DynamicFieldRenderer";
 import { PlacesAutocomplete } from "./PlacesAutocomplete";
 
 /**
  * Address form container. Country selector + (once a country is chosen) the
- * autocomplete capture flow. The inner form is keyed by country so a switch
- * re-initialises form state.
- *
- * US1 scope: country-first guard, autocomplete → confirmation → submit, and
- * graceful degradation when Places is unavailable. The Manually Edit toggle +
- * editable dynamic fields (US2) and saved list (US3) layer on next.
+ * capture flow: autocomplete → confirmation, with a Manually Edit toggle into
+ * editable country-specific fields. Switching country re-initialises the form,
+ * preserving only fields shared between layouts (D4 / FR-007 / SC-005).
  */
 export function AddressForm() {
   const { t } = useTranslation("address-form");
@@ -51,20 +50,43 @@ export function AddressForm() {
   );
 }
 
+/** Seed a new country's form from the cross-country draft, keeping only keys that exist in this layout. */
+function seedFromDraft(country: Country): Partial<Address> {
+  const draft = useAddressFormStore.getState().draft as Record<string, unknown>;
+  const seeded: Record<string, unknown> = {};
+  for (const field of COUNTRY_CONFIGS[country].fields) {
+    if (draft[field.key] !== undefined) seeded[field.key] = draft[field.key];
+  }
+  return seeded as Partial<Address>;
+}
+
 function CountryForm({ country }: { country: Country }) {
   const { t } = useTranslation("address-form");
   const create = useCreateAddress();
   const fields = useCountryFields(country);
   const setGooglePlaceId = useAddressFormStore((s) => s.setGooglePlaceId);
   const googlePlaceId = useAddressFormStore((s) => s.googlePlaceId);
+  const setDraft = useAddressFormStore((s) => s.setDraft);
+  const manualEdit = useAddressFormStore((s) => s.manualEdit);
+  const setManualEdit = useAddressFormStore((s) => s.setManualEdit);
 
   const [captured, setCaptured] = useState(false);
   const [missingRequired, setMissingRequired] = useState<string[]>([]);
 
+  // Preserve fields shared with the previous country (e.g. addressLine1).
+  const initialValues = useMemo(() => seedFromDraft(country), [country]);
+
   const methods = useForm<Address>({
     resolver: addressResolver(country),
     mode: "onSubmit",
+    defaultValues: initialValues as Address,
   });
+
+  // Mirror form values into the store so a country switch can carry shared fields.
+  useEffect(() => {
+    const subscription = methods.watch((values) => setDraft(values as Partial<Address>));
+    return () => subscription.unsubscribe();
+  }, [methods, setDraft]);
 
   const { inputRef, unavailable } = useGooglePlaces({
     country,
@@ -85,9 +107,25 @@ function CountryForm({ country }: { country: Country }) {
       <div className="grid gap-4">
         <PlacesAutocomplete inputRef={inputRef} unavailable={unavailable} />
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
-          {captured && (
-            <AddressConfirmation fields={fields} missingRequired={missingRequired} />
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              aria-pressed={manualEdit}
+              onClick={() => setManualEdit(!manualEdit)}
+            >
+              {t("manualEdit")}
+            </Button>
+          </div>
+
+          {manualEdit ? (
+            <DynamicFieldRenderer fields={fields} />
+          ) : (
+            captured && (
+              <AddressConfirmation fields={fields} missingRequired={missingRequired} />
+            )
           )}
+
           <Button type="submit" disabled={create.isPending}>
             {create.isPending ? t("submitting") : t("submit")}
           </Button>

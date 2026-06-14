@@ -96,17 +96,17 @@ Feature-sliced under `src/features/address-form/{api,hooks,stores,schemas,compon
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T029 [P] [US2] Integration test: manual mode renders correct field set per country (USA/AUS/IDN) with required markers + dropdown options, in `src/features/address-form/__tests__/AddressForm.manual.test.tsx`
-- [ ] T030 [P] [US2] Integration test: country switch re-renders fields and clears incompatible values; invalid submit (4-digit ZIP, empty required, out-of-set dropdown) surfaces per-field localized errors, in `src/features/address-form/__tests__/AddressForm.validation.test.tsx`
-- [ ] T031 [P] [US2] Integration test (FR-007): values populated by autocomplete persist into manual-edit fields after toggling Manually Edit, in `src/features/address-form/__tests__/AddressForm.carryover.test.tsx`
+- [X] T029 [P] [US2] Integration test: manual mode renders correct field set per country (USA/AUS/IDN) with required markers + dropdown options, in `src/features/address-form/__tests__/AddressForm.manual.test.tsx`
+- [X] T030 [P] [US2] Integration test: country switch re-renders fields and clears incompatible values; invalid submit (4-digit ZIP, empty required, out-of-set dropdown) surfaces per-field localized errors, in `src/features/address-form/__tests__/AddressForm.validation.test.tsx`
+- [X] T031 [P] [US2] Integration test (FR-007): values populated by autocomplete persist into manual-edit fields after toggling Manually Edit, in `src/features/address-form/__tests__/AddressForm.carryover.test.tsx`
 
 ### Implementation for User Story 2
 
-- [ ] T032 [US2] Build `DynamicFieldRenderer` — maps `useCountryFields` descriptors to generic text/select inputs bound to RHF, with labels via i18n and required markers (NO per-country branches) — in `src/features/address-form/components/DynamicFieldRenderer.tsx`
-- [ ] T033 [US2] Add "Manually Edit" toggle (reads/writes `manualEdit` in store) switching AddressForm between confirmation and DynamicFieldRenderer in `src/features/address-form/components/AddressForm.tsx`
-- [ ] T034 [US2] Implement FR-007 carry-over + country-switch reconciliation: entering manual mode keeps current RHF values; on `setCountry`, RHF `reset` to new country defaults preserving only keys present in both layouts (e.g. `addressLine1`), in `src/features/address-form/components/AddressForm.tsx` (uses store from T014)
-- [ ] T035 [US2] Wire validation surfacing: zod resolver errors + server 422 field errors rendered per field with i18n messages and `aria` association in `src/features/address-form/components/DynamicFieldRenderer.tsx`
-- [ ] T036 [P] [US2] (Optional, FR-019 reconciliation) Implement `useCountryMetadata` query hook (`GET /addresses/metadata`) to verify local config parity in `src/features/address-form/api/useCountryMetadata.ts`
+- [X] T032 [US2] Build `DynamicFieldRenderer` — maps `useCountryFields` descriptors to generic text/select inputs bound to RHF, with labels via i18n and required markers (NO per-country branches) — in `src/features/address-form/components/DynamicFieldRenderer.tsx`
+- [X] T033 [US2] Add "Manually Edit" toggle (reads/writes `manualEdit` in store) switching AddressForm between confirmation and DynamicFieldRenderer in `src/features/address-form/components/AddressForm.tsx`
+- [X] T034 [US2] Implement FR-007 carry-over + country-switch reconciliation: entering manual mode keeps current RHF values; on `setCountry`, RHF `reset` to new country defaults preserving only keys present in both layouts (e.g. `addressLine1`), in `src/features/address-form/components/AddressForm.tsx` (uses store from T014)
+- [X] T035 [US2] Wire validation surfacing: zod resolver errors + server 422 field errors rendered per field with i18n messages and `aria` association in `src/features/address-form/components/DynamicFieldRenderer.tsx`
+- [X] T036 [P] [US2] (Optional, FR-019 reconciliation) Implement `useCountryMetadata` query hook (`GET /addresses/metadata`) to verify local config parity in `src/features/address-form/api/useCountryMetadata.ts`
 
 **Checkpoint**: Manual entry + validation + country switching + carry-over work; combined with US1, both P1 flows functional
 
