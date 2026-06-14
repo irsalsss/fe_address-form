@@ -137,12 +137,12 @@ Feature-sliced under `src/features/address-form/{api,hooks,stores,schemas,compon
 
 **Purpose**: E2E, accessibility, responsiveness, i18n, invariants, and final gates across all stories
 
-- [ ] T042 [P] Playwright E2E `e2e/address-flow.spec.ts`: full flow (country → autocomplete → manual edit → fill → submit), validation errors on empty submit, and locale toggle to Bahasa Indonesian (chromium/firefox/webkit)
-- [ ] T043 [P] Add an ESLint rule / unit assertion verifying the renderer + config contain no per-country conditional branches (SC-007), referencing `src/features/address-form/components/DynamicFieldRenderer.tsx` and `config/country-config.ts`
-- [ ] T044 [P] Accessibility pass: all inputs labeled, errors programmatically associated + announced, keyboard operable across CountrySelect/PlacesAutocomplete/DynamicFieldRenderer (SC-008)
-- [ ] T045 [P] Responsive pass: form usable mobile→desktop (SC-008)
-- [ ] T046 [P] Verify i18n en/id key parity and that no user-facing string is hardcoded (Constitution V)
-- [ ] T047 Run `pnpm lint && pnpm type-check && pnpm test:ci && pnpm test:e2e` — all green
+- [X] T042 [P] Playwright E2E `e2e/address-flow.spec.ts`: full flow (country → autocomplete → manual edit → fill → submit), validation errors on empty submit, and locale toggle to Bahasa Indonesian (chromium/firefox/webkit)
+- [X] T043 [P] Add an ESLint rule / unit assertion verifying the renderer + config contain no per-country conditional branches (SC-007), referencing `src/features/address-form/components/DynamicFieldRenderer.tsx` and `config/country-config.ts`
+- [X] T044 [P] Accessibility pass: all inputs labeled, errors programmatically associated + announced, keyboard operable across CountrySelect/PlacesAutocomplete/DynamicFieldRenderer (SC-008)
+- [X] T045 [P] Responsive pass: form usable mobile→desktop (SC-008)
+- [X] T046 [P] Verify i18n en/id key parity and that no user-facing string is hardcoded (Constitution V)
+- [X] T047 Run `pnpm lint && pnpm type-check && pnpm test:ci && pnpm test:e2e` — all green
 - [ ] T048 Execute quickstart.md scenarios S1–S7 against a running backend and confirm expected outcomes
 
 ---

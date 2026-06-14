@@ -61,6 +61,7 @@ export function DynamicFieldRenderer({ fields }: DynamicFieldRendererProps) {
                   >
                     <SelectTrigger
                       id={field.key}
+                      aria-required={field.required}
                       aria-invalid={Boolean(message)}
                       aria-describedby={message ? errorId : undefined}
                     >
@@ -79,6 +80,7 @@ export function DynamicFieldRenderer({ fields }: DynamicFieldRendererProps) {
             ) : (
               <Input
                 id={field.key}
+                aria-required={field.required}
                 aria-invalid={Boolean(message)}
                 aria-describedby={message ? errorId : undefined}
                 {...register(field.key as keyof Address)}
