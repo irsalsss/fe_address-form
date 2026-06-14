@@ -5,8 +5,8 @@ const stateValues = AUS_STATES.map((o) => o.value);
 
 /** Australia address schema (FR-014). */
 export const ausSchema = z.object({
-  addressLine1: z.string().min(1, { message: "errors.required" }),
-  addressLine2: z.string().optional(),
+  line1: z.string().min(1, { message: "errors.required" }),
+  line2: z.string().optional(),
   suburb: z.string().min(1, { message: "errors.required" }),
   state: z
     .string()

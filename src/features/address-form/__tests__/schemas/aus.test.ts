@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ausSchema } from "../../schemas/aus";
 
 const valid = {
-  addressLine1: "1 Macquarie St",
+  line1: "1 Macquarie St",
   suburb: "Sydney",
   state: "NSW",
   postcode: "2000",

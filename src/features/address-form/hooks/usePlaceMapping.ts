@@ -50,16 +50,16 @@ export function mapPlaceToFields(
   let fields: Partial<Address>;
   if (country === "USA") {
     fields = {
-      addressLine1: line1,
-      addressLine2: subpremise,
+      line1,
+      line2: subpremise,
       city: locality,
       state: aal1?.short_name ?? "",
-      zipCode: postal,
+      zip: postal,
     };
   } else if (country === "AUS") {
     fields = {
-      addressLine1: line1,
-      addressLine2: subpremise,
+      line1,
+      line2: subpremise,
       suburb: locality || sublocality,
       state: aal1?.short_name ?? "",
       postcode: postal,
@@ -67,11 +67,11 @@ export function mapPlaceToFields(
   } else {
     fields = {
       province: aal1?.long_name ?? "",
-      cityRegency: aal2 || locality,
+      city: aal2 || locality,
       district: aal3 || sublocality,
       village: aal4 || undefined,
       postalCode: postal,
-      streetAddress: line1,
+      street: line1,
     };
   }
 

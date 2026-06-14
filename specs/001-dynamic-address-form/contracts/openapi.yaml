@@ -96,10 +96,11 @@ components:
       properties:
         key:
           type: string
-          example: zipCode
+          description: backend registry key — the payload key (e.g. zip, line1, street)
+          example: zip
         labelKey:
           type: string
-          description: i18n key in the address-form namespace
+          description: i18n key in the address-form namespace (display only)
           example: fields.zipCode
         type:
           type: string
@@ -134,23 +135,25 @@ components:
           items:
             $ref: "#/components/schemas/FieldDescriptor"
 
+    # Keys MUST match the backend registry (be/src/features/countries/registry.ts),
+    # which the .strict() submit validator derives from. Never rename to match labels.
     UsaFields:
       type: object
-      required: [addressLine1, city, state, zipCode]
+      required: [line1, city, state, zip]
       properties:
-        addressLine1: { type: string, minLength: 1 }
-        addressLine2: { type: string }
+        line1: { type: string, minLength: 1, description: Address Line 1 }
+        line2: { type: string, description: Address Line 2 }
         city: { type: string, minLength: 1 }
         state: { type: string, description: 2-letter US state code }
-        zipCode: { type: string, pattern: "^\\d{5}$" }
+        zip: { type: string, pattern: "^\\d{5}$", description: ZIP Code }
       additionalProperties: false
 
     AusFields:
       type: object
-      required: [addressLine1, suburb, state, postcode]
+      required: [line1, suburb, state, postcode]
       properties:
-        addressLine1: { type: string, minLength: 1 }
-        addressLine2: { type: string }
+        line1: { type: string, minLength: 1, description: Address Line 1 }
+        line2: { type: string, description: Address Line 2 }
         suburb: { type: string, minLength: 1 }
         state:
           type: string
@@ -160,14 +163,14 @@ components:
 
     IdnFields:
       type: object
-      required: [province, cityRegency, district, postalCode, streetAddress]
+      required: [province, city, district, postalCode, street]
       properties:
         province: { type: string, description: Indonesian province name }
-        cityRegency: { type: string, minLength: 1 }
+        city: { type: string, minLength: 1, description: City / Regency }
         district: { type: string, minLength: 1, description: Kecamatan }
         village: { type: string, description: Kelurahan/Desa }
         postalCode: { type: string, pattern: "^\\d{5}$" }
-        streetAddress: { type: string, minLength: 1 }
+        street: { type: string, minLength: 1, description: Street Address }
       additionalProperties: false
 
     CreateAddressRequest:
@@ -221,5 +224,5 @@ components:
             type: object
             required: [field, message]
             properties:
-              field: { type: string, example: zipCode }
+              field: { type: string, example: zip }
               message: { type: string, example: must be 5 digits }

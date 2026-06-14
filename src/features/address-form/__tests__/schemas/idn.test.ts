@@ -3,10 +3,10 @@ import { idnSchema } from "../../schemas/idn";
 
 const valid = {
   province: "Jawa Barat",
-  cityRegency: "Bandung",
+  city: "Bandung",
   district: "Coblong",
   postalCode: "40132",
-  streetAddress: "Jl. Ganesha No. 10",
+  street: "Jl. Ganesha No. 10",
 };
 
 describe("idnSchema", () => {

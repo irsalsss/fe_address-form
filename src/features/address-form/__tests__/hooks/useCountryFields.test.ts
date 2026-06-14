@@ -4,18 +4,18 @@ import { useCountryFields } from "../../hooks/useCountryFields";
 describe("useCountryFields", () => {
   it("returns USA fields in order", () => {
     expect(useCountryFields("USA").map((f) => f.key)).toEqual([
-      "addressLine1",
-      "addressLine2",
+      "line1",
+      "line2",
       "city",
       "state",
-      "zipCode",
+      "zip",
     ]);
   });
 
   it("returns AUS fields in order", () => {
     expect(useCountryFields("AUS").map((f) => f.key)).toEqual([
-      "addressLine1",
-      "addressLine2",
+      "line1",
+      "line2",
       "suburb",
       "state",
       "postcode",
@@ -25,11 +25,11 @@ describe("useCountryFields", () => {
   it("returns IDN fields in order", () => {
     expect(useCountryFields("IDN").map((f) => f.key)).toEqual([
       "province",
-      "cityRegency",
+      "city",
       "district",
       "village",
       "postalCode",
-      "streetAddress",
+      "street",
     ]);
   });
 

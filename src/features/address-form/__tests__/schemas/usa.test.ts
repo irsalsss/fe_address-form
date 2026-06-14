@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { usaSchema } from "../../schemas/usa";
 
 const valid = {
-  addressLine1: "1600 Amphitheatre Pkwy",
+  line1: "1600 Amphitheatre Pkwy",
   city: "Mountain View",
   state: "CA",
-  zipCode: "94043",
+  zip: "94043",
 };
 
 describe("usaSchema", () => {
@@ -14,9 +14,9 @@ describe("usaSchema", () => {
   });
 
   it("rejects a non-5-digit ZIP", () => {
-    expect(usaSchema.safeParse({ ...valid, zipCode: "9404" }).success).toBe(false);
-    expect(usaSchema.safeParse({ ...valid, zipCode: "940435" }).success).toBe(false);
-    expect(usaSchema.safeParse({ ...valid, zipCode: "ABCDE" }).success).toBe(false);
+    expect(usaSchema.safeParse({ ...valid, zip: "9404" }).success).toBe(false);
+    expect(usaSchema.safeParse({ ...valid, zip: "940435" }).success).toBe(false);
+    expect(usaSchema.safeParse({ ...valid, zip: "ABCDE" }).success).toBe(false);
   });
 
   it("rejects a missing required field", () => {

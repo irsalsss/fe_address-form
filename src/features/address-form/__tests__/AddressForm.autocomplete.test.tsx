@@ -48,10 +48,10 @@ describe("AddressForm — autocomplete capture (US1)", () => {
     act(() => {
       hoisted.holder.onResult?.({
         fields: {
-          addressLine1: "1600 Amphitheatre Pkwy",
+          line1: "1600 Amphitheatre Pkwy",
           city: "Mountain View",
           state: "CA",
-          zipCode: "94043",
+          zip: "94043",
         },
         missingRequired: [],
       });
@@ -65,7 +65,7 @@ describe("AddressForm — autocomplete capture (US1)", () => {
     expect(hoisted.mutate).toHaveBeenCalledWith(
       expect.objectContaining({
         country: "USA",
-        fields: expect.objectContaining({ zipCode: "94043", state: "CA" }),
+        fields: expect.objectContaining({ zip: "94043", state: "CA" }),
       }),
       expect.objectContaining({
         onError: expect.any(Function),

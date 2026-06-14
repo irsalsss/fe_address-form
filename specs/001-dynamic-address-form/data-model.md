@@ -18,7 +18,7 @@ The per-country field registry. Source of truth for FE rendering. Defined as cod
 
 | Attribute | Type | Notes |
 |-----------|------|-------|
-| `key` | string | stable field id (e.g. `addressLine1`, `zipCode`, `district`) |
+| `key` | string | stable field id — matches backend registry key (e.g. `line1`, `zip`, `district`); this is the payload key |
 | `labelKey` | string | i18n key in `address-form` namespace |
 | `type` | `'text' \| 'select'` | render kind |
 | `required` | boolean | drives required validation + `*` marker |
@@ -32,17 +32,17 @@ The per-country field registry. Source of truth for FE rendering. Defined as cod
 **USA** (in order):
 | key | type | required | format | options |
 |-----|------|----------|--------|---------|
-| `addressLine1` | text | ✅ | — | — |
-| `addressLine2` | text | ❌ | — | — |
+| `line1` | text | ✅ | — | — |
+| `line2` | text | ❌ | — | — |
 | `city` | text | ✅ | — | — |
 | `state` | select | ✅ | — | 50 US states (2-letter) |
-| `zipCode` | text | ✅ | `zip5` (`^\d{5}$`) | — |
+| `zip` | text | ✅ | `zip5` (`^\d{5}$`) | — |
 
 **AUS** (in order):
 | key | type | required | format | options |
 |-----|------|----------|--------|---------|
-| `addressLine1` | text | ✅ | — | — |
-| `addressLine2` | text | ❌ | — | — |
+| `line1` | text | ✅ | — | — |
+| `line2` | text | ❌ | — | — |
 | `suburb` | text | ✅ | — | — |
 | `state` | select | ✅ | — | NSW, VIC, QLD, WA, SA, TAS, ACT, NT |
 | `postcode` | text | ✅ | `postcode4` (`^\d{4}$`) | — |
@@ -51,26 +51,26 @@ The per-country field registry. Source of truth for FE rendering. Defined as cod
 | key | type | required | format | options |
 |-----|------|----------|--------|---------|
 | `province` | select | ✅ | — | Indonesian provinces (e.g. Jawa Barat, Bali, Sumatra Utara) |
-| `cityRegency` | text | ✅ | — | — |
+| `city` | text | ✅ | — | — (City / Regency) |
 | `district` | text | ✅ | — | — (Kecamatan) |
 | `village` | text | ❌ | — | — (Kelurahan/Desa) |
 | `postalCode` | text | ✅ | `postal5` (`^\d{5}$`) | — |
-| `streetAddress` | text | ✅ | — | — |
+| `street` | text | ✅ | — | — (Street Address) |
 
 ## Address payload (FE form values + API shapes)
 
 The form values and API request/response use a discriminated union on `country`, matching the existing FE union (`USAAddress | AUSAddress | IDNAddress` in `types.ts`):
 
-- `USA` → `{ addressLine1, addressLine2?, city, state, zipCode }`
-- `AUS` → `{ addressLine1, addressLine2?, suburb, state, postcode }`
-- `IDN` → `{ province, cityRegency, district, village?, postalCode, streetAddress }`
+- `USA` → `{ line1, line2?, city, state, zip }`
+- `AUS` → `{ line1, line2?, suburb, state, postcode }`
+- `IDN` → `{ province, city, district, village?, postalCode, street }`
 
 **Create request** (FE → API): `{ country, fields, googlePlaceId? }`.
 **Response / list item** (API → FE): `{ id, country, fields, createdAt }`.
 
 **Client validation rules** (Zod, enforced before submit — FR-008/009/010):
 - All `required` fields present and non-empty.
-- `zipCode` matches `^\d{5}$` (USA); `postcode` matches `^\d{4}$` (AUS); `postalCode` matches `^\d{5}$` (IDN).
+- `zip` matches `^\d{5}$` (USA); `postcode` matches `^\d{4}$` (AUS); `postalCode` matches `^\d{5}$` (IDN).
 - `state`/`province` ∈ that country's allowed option set.
 - Values for keys absent from the active country's layout are not submitted.
 

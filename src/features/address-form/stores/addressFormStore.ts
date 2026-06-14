@@ -6,7 +6,7 @@ import type { Address, Country } from "../types";
  * values in React Hook Form — only pure UI/selection state lives here.
  *
  * `draft` mirrors the current form values so that switching country can
- * preserve fields shared between layouts (e.g. addressLine1) while incompatible
+ * preserve fields shared between layouts (e.g. line1) while incompatible
  * fields are simply not seeded into the new country's form (D4 / FR-007).
  */
 interface AddressFormState {

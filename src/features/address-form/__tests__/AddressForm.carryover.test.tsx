@@ -40,10 +40,10 @@ describe("AddressForm — autocomplete values carry into manual edit (US2, FR-00
     act(() => {
       hoisted.holder.onResult?.({
         fields: {
-          addressLine1: "1 Main St",
+          line1: "1 Main St",
           city: "Los Angeles",
           state: "CA",
-          zipCode: "90001",
+          zip: "90001",
         },
         missingRequired: [],
       });

@@ -81,7 +81,7 @@ function CountryForm({ country }: { country: Country }) {
     return base as unknown as Address;
   }, [country]);
 
-  // Preserve fields shared with the previous country (e.g. addressLine1).
+  // Preserve fields shared with the previous country (e.g. line1).
   const initialValues = useMemo(
     () => ({ ...emptyValues, ...seedFromDraft(country) }) as Address,
     [country, emptyValues],

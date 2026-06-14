@@ -17,7 +17,11 @@ import {
 export type FieldFormat = "zip5" | "postcode4" | "postal5";
 
 export interface FieldDescriptor {
-  /** Stable field id; also the form value key and i18n label suffix. */
+  /**
+   * Stable field id — MUST match the backend registry key (countries/registry.ts).
+   * This is the payload key sent to POST /addresses (validator is `.strict()`).
+   * Never derive it from the label; `labelKey` is for display only.
+   */
   key: string;
   /** i18n key in the `address-form` namespace (e.g. `fields.zipCode`). */
   labelKey: string;
@@ -36,19 +40,19 @@ export interface CountryConfig {
 const USA: CountryConfig = {
   country: "USA",
   fields: [
-    { key: "addressLine1", labelKey: "fields.addressLine1", type: "text", required: true },
-    { key: "addressLine2", labelKey: "fields.addressLine2", type: "text", required: false },
+    { key: "line1", labelKey: "fields.addressLine1", type: "text", required: true },
+    { key: "line2", labelKey: "fields.addressLine2", type: "text", required: false },
     { key: "city", labelKey: "fields.city", type: "text", required: true },
     { key: "state", labelKey: "fields.state", type: "select", required: true, options: US_STATES },
-    { key: "zipCode", labelKey: "fields.zipCode", type: "text", required: true, format: "zip5" },
+    { key: "zip", labelKey: "fields.zipCode", type: "text", required: true, format: "zip5" },
   ],
 };
 
 const AUS: CountryConfig = {
   country: "AUS",
   fields: [
-    { key: "addressLine1", labelKey: "fields.addressLine1", type: "text", required: true },
-    { key: "addressLine2", labelKey: "fields.addressLine2", type: "text", required: false },
+    { key: "line1", labelKey: "fields.addressLine1", type: "text", required: true },
+    { key: "line2", labelKey: "fields.addressLine2", type: "text", required: false },
     { key: "suburb", labelKey: "fields.suburb", type: "text", required: true },
     { key: "state", labelKey: "fields.state", type: "select", required: true, options: AUS_STATES },
     { key: "postcode", labelKey: "fields.postcode", type: "text", required: true, format: "postcode4" },
@@ -59,11 +63,11 @@ const IDN: CountryConfig = {
   country: "IDN",
   fields: [
     { key: "province", labelKey: "fields.province", type: "select", required: true, options: IDN_PROVINCES },
-    { key: "cityRegency", labelKey: "fields.cityRegency", type: "text", required: true },
+    { key: "city", labelKey: "fields.cityRegency", type: "text", required: true },
     { key: "district", labelKey: "fields.district", type: "text", required: true },
     { key: "village", labelKey: "fields.village", type: "text", required: false },
     { key: "postalCode", labelKey: "fields.postalCode", type: "text", required: true, format: "postal5" },
-    { key: "streetAddress", labelKey: "fields.streetAddress", type: "text", required: true },
+    { key: "street", labelKey: "fields.streetAddress", type: "text", required: true },
   ],
 };
 
