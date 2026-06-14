@@ -1,1 +1,51 @@
-{}
+{
+  "country": {
+    "label": "Country",
+    "placeholder": "Select a country",
+    "USA": "United States",
+    "AUS": "Australia",
+    "IDN": "Indonesia"
+  },
+  "search": {
+    "label": "Search address",
+    "placeholder": "Start typing your address…",
+    "unavailable": "Address search is unavailable — please enter your address manually.",
+    "selectCountryFirst": "Select a country before searching."
+  },
+  "manualEdit": "Manually Edit",
+  "submit": "Save address",
+  "submitting": "Saving…",
+  "submitError": "Could not save the address. Please try again.",
+  "submitSuccess": "Address saved.",
+  "fields": {
+    "addressLine1": "Address Line 1",
+    "addressLine2": "Address Line 2",
+    "city": "City",
+    "state": "State",
+    "zipCode": "ZIP Code",
+    "suburb": "Suburb",
+    "postcode": "Postcode",
+    "province": "Province",
+    "cityRegency": "City / Regency",
+    "district": "District (Kecamatan)",
+    "village": "Village (Kelurahan/Desa)",
+    "postalCode": "Postal Code",
+    "streetAddress": "Street Address"
+  },
+  "optional": "optional",
+  "errors": {
+    "required": "This field is required",
+    "zip5": "Must be a 5-digit ZIP code",
+    "postcode4": "Must be a 4-digit postcode",
+    "postal5": "Must be a 5-digit postal code",
+    "invalidOption": "Please select a valid option"
+  },
+  "confirm": {
+    "title": "Confirm your address",
+    "missingRequired": "Missing — please complete this field"
+  },
+  "saved": {
+    "title": "Saved addresses",
+    "empty": "No saved addresses yet."
+  }
+}

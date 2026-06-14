@@ -43,23 +43,23 @@ Feature-sliced under `src/features/address-form/{api,hooks,stores,schemas,compon
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 [P] Add API DTO types `CreateAddressRequest`, `AddressResponse` (matching contracts/openapi.yaml) to `src/features/address-form/types.ts`
-- [ ] T006 [P] Create dropdown option lists (50 US states, 8 AUS states, IDN provinces) with `{value, labelKey}` in `src/features/address-form/config/options.ts`
-- [ ] T007 Create metadata registry — `FieldDescriptor`, `CountryConfig`, and ordered USA/AUS/IDN field arrays per data-model.md — in `src/features/address-form/config/country-config.ts` (depends on T006; pure data, NO per-country conditional logic)
-- [ ] T008 [P] Create per-country Zod schemas with format rules (`zip5` `^\d{5}$`, `postcode4` `^\d{4}$`, `postal5` `^\d{5}$`) and enum dropdowns in `src/features/address-form/schemas/usa.ts`, `aus.ts`, `idn.ts`
-- [ ] T009 Create discriminated-union schema registry + RHF resolver helper (keyed by `country`) in `src/features/address-form/schemas/index.ts` (depends on T008)
-- [ ] T010 [P] Schema unit tests (valid passes; wrong-length postal, missing required, out-of-set dropdown fail) in `src/features/address-form/__tests__/schemas/usa.test.ts`, `aus.test.ts`, `idn.test.ts`
-- [ ] T011 Populate i18n `address-form.json` (en + id) with field labels, dropdown option labels, and validation messages; add strict typing in `src/shared/i18n/resources.d.ts` (en/id key parity)
-- [ ] T012 [P] Implement HTTP wrapper (fetch via `env.VITE_API_URL`, JSON, problem+json error parsing) in `src/shared/api/http.ts`
-- [ ] T013 [P] Verify a `QueryClientProvider` exists in `src/app/` providers; add it (with a configured QueryClient) if the scaffold lacks one
-- [ ] T014 Create Zustand `addressFormStore` (`selectedCountry`, `manualEdit`, `draft`; `setCountry` resets `manualEdit`/`googlePlaceId` and clears incompatible draft) in `src/features/address-form/stores/addressFormStore.ts`
-- [ ] T015 [P] Store unit test (toggle manualEdit; setCountry resets dependent state) in `src/features/address-form/__tests__/stores/addressFormStore.test.ts`
-- [ ] T016 [P] Implement `useCountryFields` hook (returns ordered FieldDescriptor[] for a country from config) in `src/features/address-form/hooks/useCountryFields.ts`
-- [ ] T017 [P] `useCountryFields` unit test (correct field list per country) in `src/features/address-form/__tests__/hooks/useCountryFields.test.ts`
-- [ ] T018 Implement `useCreateAddress` mutation (`POST /addresses`, invalidate addresses list, map 422 field errors to RHF) in `src/features/address-form/api/useCreateAddress.ts`
-- [ ] T019 Build `CountrySelect` component (USA/AUS/IDN, writes to store) in `src/features/address-form/components/CountrySelect.tsx`
-- [ ] T020 Build `AddressForm` container shell — RHF + zod resolver wiring, hosts CountrySelect, submit handler calling useCreateAddress — in `src/features/address-form/components/AddressForm.tsx` (no dynamic fields yet)
-- [ ] T021 Mount lazy `/onboarding/address` route in `src/app/router.tsx` and export public surface from `src/features/address-form/index.ts`
+- [X] T005 [P] Add API DTO types `CreateAddressRequest`, `AddressResponse` (matching contracts/openapi.yaml) to `src/features/address-form/types.ts`
+- [X] T006 [P] Create dropdown option lists (50 US states, 8 AUS states, IDN provinces) with `{value, labelKey}` in `src/features/address-form/config/options.ts`
+- [X] T007 Create metadata registry — `FieldDescriptor`, `CountryConfig`, and ordered USA/AUS/IDN field arrays per data-model.md — in `src/features/address-form/config/country-config.ts` (depends on T006; pure data, NO per-country conditional logic)
+- [X] T008 [P] Create per-country Zod schemas with format rules (`zip5` `^\d{5}$`, `postcode4` `^\d{4}$`, `postal5` `^\d{5}$`) and enum dropdowns in `src/features/address-form/schemas/usa.ts`, `aus.ts`, `idn.ts`
+- [X] T009 Create discriminated-union schema registry + RHF resolver helper (keyed by `country`) in `src/features/address-form/schemas/index.ts` (depends on T008)
+- [X] T010 [P] Schema unit tests (valid passes; wrong-length postal, missing required, out-of-set dropdown fail) in `src/features/address-form/__tests__/schemas/usa.test.ts`, `aus.test.ts`, `idn.test.ts`
+- [X] T011 Populate i18n `address-form.json` (en + id) with field labels, dropdown option labels, and validation messages; add strict typing in `src/shared/i18n/resources.d.ts` (en/id key parity)
+- [X] T012 [P] Implement HTTP wrapper (fetch via `env.VITE_API_URL`, JSON, problem+json error parsing) in `src/shared/api/http.ts`
+- [X] T013 [P] Verify a `QueryClientProvider` exists in `src/app/` providers; add it (with a configured QueryClient) if the scaffold lacks one
+- [X] T014 Create Zustand `addressFormStore` (`selectedCountry`, `manualEdit`, `draft`; `setCountry` resets `manualEdit`/`googlePlaceId` and clears incompatible draft) in `src/features/address-form/stores/addressFormStore.ts`
+- [X] T015 [P] Store unit test (toggle manualEdit; setCountry resets dependent state) in `src/features/address-form/__tests__/stores/addressFormStore.test.ts`
+- [X] T016 [P] Implement `useCountryFields` hook (returns ordered FieldDescriptor[] for a country from config) in `src/features/address-form/hooks/useCountryFields.ts`
+- [X] T017 [P] `useCountryFields` unit test (correct field list per country) in `src/features/address-form/__tests__/hooks/useCountryFields.test.ts`
+- [X] T018 Implement `useCreateAddress` mutation (`POST /addresses`, invalidate addresses list, map 422 field errors to RHF) in `src/features/address-form/api/useCreateAddress.ts`
+- [X] T019 Build `CountrySelect` component (USA/AUS/IDN, writes to store) in `src/features/address-form/components/CountrySelect.tsx`
+- [X] T020 Build `AddressForm` container shell — RHF + zod resolver wiring, hosts CountrySelect, submit handler calling useCreateAddress — in `src/features/address-form/components/AddressForm.tsx` (no dynamic fields yet)
+- [X] T021 Mount lazy `/onboarding/address` route in `src/app/router.tsx` and export public surface from `src/features/address-form/index.ts`
 
 **Checkpoint**: Country selectable, schemas/store/api/form shell ready — user stories can begin
 

@@ -1,1 +1,51 @@
-{}
+{
+  "country": {
+    "label": "Negara",
+    "placeholder": "Pilih negara",
+    "USA": "Amerika Serikat",
+    "AUS": "Australia",
+    "IDN": "Indonesia"
+  },
+  "search": {
+    "label": "Cari alamat",
+    "placeholder": "Mulai ketik alamat Anda…",
+    "unavailable": "Pencarian alamat tidak tersedia — silakan masukkan alamat secara manual.",
+    "selectCountryFirst": "Pilih negara sebelum mencari."
+  },
+  "manualEdit": "Edit Manual",
+  "submit": "Simpan alamat",
+  "submitting": "Menyimpan…",
+  "submitError": "Gagal menyimpan alamat. Silakan coba lagi.",
+  "submitSuccess": "Alamat tersimpan.",
+  "fields": {
+    "addressLine1": "Alamat Baris 1",
+    "addressLine2": "Alamat Baris 2",
+    "city": "Kota",
+    "state": "Negara Bagian",
+    "zipCode": "Kode Pos",
+    "suburb": "Suburb",
+    "postcode": "Kode Pos",
+    "province": "Provinsi",
+    "cityRegency": "Kota / Kabupaten",
+    "district": "Kecamatan",
+    "village": "Kelurahan/Desa",
+    "postalCode": "Kode Pos",
+    "streetAddress": "Alamat Jalan"
+  },
+  "optional": "opsional",
+  "errors": {
+    "required": "Kolom ini wajib diisi",
+    "zip5": "Harus berupa kode pos 5 digit",
+    "postcode4": "Harus berupa kode pos 4 digit",
+    "postal5": "Harus berupa kode pos 5 digit",
+    "invalidOption": "Silakan pilih opsi yang valid"
+  },
+  "confirm": {
+    "title": "Konfirmasi alamat Anda",
+    "missingRequired": "Belum lengkap — silakan isi kolom ini"
+  },
+  "saved": {
+    "title": "Alamat tersimpan",
+    "empty": "Belum ada alamat tersimpan."
+  }
+}
