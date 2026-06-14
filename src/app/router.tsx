@@ -1,8 +1,8 @@
 import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 
-const AddressForm = lazy(() =>
-  import("@/features/address-form").then((m) => ({ default: m.AddressForm })),
+const AddressPage = lazy(() =>
+  import("@/features/address-form").then((m) => ({ default: m.AddressPage })),
 );
 
 export const router = createBrowserRouter([
@@ -15,7 +15,7 @@ export const router = createBrowserRouter([
     element: (
       <Suspense fallback={<p>Loading…</p>}>
         <main className="bg-background min-h-dvh p-6">
-          <AddressForm />
+          <AddressPage />
         </main>
       </Suspense>
     ),

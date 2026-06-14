@@ -120,14 +120,14 @@ Feature-sliced under `src/features/address-form/{api,hooks,stores,schemas,compon
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T037 [P] [US3] Integration test: saved list (mocked API) renders each record with its own country field set in `src/features/address-form/__tests__/SavedAddresses.test.tsx`
+- [X] T037 [P] [US3] Integration test: saved list (mocked API) renders each record with its own country field set in `src/features/address-form/__tests__/SavedAddresses.test.tsx`
 
 ### Implementation for User Story 3
 
-- [ ] T038 [P] [US3] Implement `useAddresses` query hook (`GET /addresses`) in `src/features/address-form/api/useAddresses.ts`
-- [ ] T039 [US3] Build `SavedAddresses` component (renders each address via its country config field order) in `src/features/address-form/components/SavedAddresses.tsx` (depends on T038)
-- [ ] T040 [US3] Display `SavedAddresses` on the `/onboarding/address` route in `src/app/router.tsx`
-- [ ] T041 [US3] On successful create, invalidate the `useAddresses` query so the list refreshes, in `src/features/address-form/components/AddressForm.tsx` (coordinate with T018/T034 — shared file)
+- [X] T038 [P] [US3] Implement `useAddresses` query hook (`GET /addresses`) in `src/features/address-form/api/useAddresses.ts`
+- [X] T039 [US3] Build `SavedAddresses` component (renders each address via its country config field order) in `src/features/address-form/components/SavedAddresses.tsx` (depends on T038)
+- [X] T040 [US3] Display `SavedAddresses` on the `/onboarding/address` route in `src/app/router.tsx`
+- [X] T041 [US3] On successful create, invalidate the `useAddresses` query so the list refreshes, in `src/features/address-form/components/AddressForm.tsx` (coordinate with T018/T034 — shared file)
 
 **Checkpoint**: All three stories independently functional
 
