@@ -34,163 +34,60 @@ A quick note on how I built this and why. The best choice here really depends on
 
 ### Design decisions
 
-1. **One config drives the whole form.**
-  New country = one config plus one schema.
+1. **The backend metadata controls the whole form.**
+  The list of countries comes from `GET /countries`, and the fields, options, and
+  validation rules for each country come from `GET /countries/:code/fields`. Because of
+  this, when we want to add a new country or change an existing one, we only need to
+  change the backend. We do not need to change the frontend code or deploy it again.
 
-2. **One Zod schema per country, used everywhere.**
-  Form and backend share the same rules.
+2. **The Zod schema is created at runtime from the metadata.**
+  A schema builder takes the metadata rules, such as `required`, `length`, `numeric`,
+  `pattern`, and `maxLength`, and turns them into the RHF resolver. This means we do not
+  write a separate schema for each country by hand. In addition, the strict validator on
+  the backend is still the final check that decides if the data is accepted.
 
-3. **State is split by what it is.**
-  Query for server data, Zustand for UI, RHF for forms.
+3. **The renderer does not depend on the country.**
+  `DynamicFieldRenderer` and `AddressConfirmation` draw the fields in a general way from
+  the metadata, and they follow the order that the backend gives. As a result, there are
+  no `if (country === ...)` branches in the code.
 
-4. **Each feature stays in its own box.**
-  Exposed only through `index.ts`; network calls confined to `api/`.
+4. **The labels have a safe fallback.**
+  Each label is found by its field key. First the code looks for a local translation,
+  then it uses the English label from the backend, and finally it uses a humanized key.
+  Translations are optional, so a missing translation is something the form expects and
+  handles, and the user never sees a raw key on the screen.
 
-5. **Autocomplete is the fast path, not the only path.**
-  Manual entry always works when Places is down.
+5. **The state is divided by what it is.**
+  We use Query for server data, such as the metadata and the addresses, Zustand for the
+  UI, and RHF for the forms. The metadata is also cached, and it is refreshed when the
+  `version` field in the payload changes.
+
+6. **Every feature stays inside its own box.**
+  A feature is shared only through its `index.ts` file, and all network calls are kept
+  inside the `api/` folder.
+
+7. **Autocomplete is the fast way, but not the only way.**
+  Manual entry always works, even when Places is not available. The logic that maps a
+  place to the fields stays on the frontend because it is country-specific logic and not
+  data, and it is keyed against the metadata field keys.
 
 ### Trade-offs
 
-1. **The config approach is less direct to read.**
-  Harder to follow, but answers the dynamic-country bonus ask.
+1. **The form now needs to fetch the metadata first.**
+  It can no longer render straight away from local data, so it has to show clear loading,
+  error, and retry states. The cost is that there is more asynchronous code to manage, but
+  the benefit is that the country data can never drift out of sync.
 
-2. **The front end keeps its own copy of the country config.**
-  Instant and offline, at the cost of duplicated config.
+2. **The general rendering is harder to read.**
+  It is more difficult to follow than fields that are written directly in the code.
+  However, this is the reason why changes to a country can be made on the backend only.
 
-3. **SPA, not Next.js.**
-  Lighter for a small form with no SEO need.
+3. **It is an SPA and not Next.js.**
+  This is lighter for a small form that does not need SEO.
 
-4. **Tests were sized to the time limit.**
-  Covered what's most likely to break, not full coverage.
+4. **The tests were planned around the time limit.**
+  They cover the parts that are most likely to break rather than every case.
 
-5. **Zustand over Context.**
-  Tighter re-renders, reads cleanly, already in the project.
-
-## Step-by-Step AI Workflow
-1. Initiate the repo by prompting to AI:
-```
-/senior-fe-architect, initiate Vite, React, Typescript, Tailwind v4, shadcn/ui, unit test using vitest, e2e test using playwright, and the localization using i18next.
-```
-
-2. Init [spec-kit](https://github.com/github/spec-kit)
-3. Run in terminal agents:
-```
-  /speckit-constitution add principles for this project that will cater all the needs 
-    in this reqs (for FE only):                                                                       
-    Background                                                                          
-                                                                                        
-    AcmeCorp is building a new customer onboarding flow that collects user addresses.   
-    Since addresses vary by country, the company needs a dynamic form system that       
-    adapts based on the selected country.                                               
-                                                                                        
-    The design requirements are:                                                        
-                                                                                        
-    - Country dropdown at the top of the page.                                          
-                                                                                        
-    - Address input with Google Places autocomplete for quick entry.                    
-                                                                                        
-    - A “Manually Edit” button that switches the form into manual entry mode.           
-                                                                                        
-    - In manual mode, the form layout should dynamically adjust fields based on the     
-    selected country.                                                                   
-                                                                                        
-    - Captured addresses must be saved to a backend service and stored in a database.   
-                                                                                        
-    Supported Countries & Field Layouts                                                 
-                                                                                        
-    1. United States (USA)                                                              
-                                                                                        
-    - Address Line 1 (required)                                                         
-                                                                                        
-    - Address Line 2 (optional)                                                         
-                                                                                        
-    - City (required)                                                                   
-                                                                                        
-    - State (dropdown: e.g., CA, NY, TX)                                                
-                                                                                        
-    - ZIP Code (5-digit, required)                                                      
-                                                                                        
-    2. Australia (AUS)                                                                  
-                                                                                        
-    - Address Line 1 (required)                                                         
-                                                                                        
-    - Address Line 2 (optional)                                                         
-                                                                                        
-    - Suburb (required)                                                                 
-                                                                                        
-    - State (dropdown: NSW, VIC, QLD, WA, SA, TAS, ACT, NT)                             
-                                                                                        
-    - Postcode (4-digit, required)                                                      
-                                                                                        
-    3. Indonesia (IDN)                                                                  
-                                                                                        
-    - Province (dropdown: e.g., Jawa Barat, Bali, Sumatra Utara)                        
-                                                                                        
-    - City / Regency (required)                                                         
-                                                                                        
-    - District (Kecamatan, required)                                                    
-                                                                                        
-    - Village (Kelurahan/Desa, optional)                                                
-                                                                                        
-    - Postal Code (required, 5-digit)                                                   
-                                                                                        
-    - Street Address (required)                                                         
-                                                                                        
-  Your Task (Timebox: 2 hours)                                                          
-                                                                                        
-  Build a small end-to-end application that demonstrates this feature.                  
-                                                                                        
-  Frontend Requirements                                                                 
-                                                                                        
-  - Dropdown to select country.                                                         
-                                                                                        
-  - Address input with Google Places autocomplete integration.                          
-                                                                                        
-  - “Manually Edit” button that dynamically renders address fields appropriate to the   
-  country.                                                                              
-                                                                                        
-  - Validation for required fields (configurable per country).                          
-                                                                                        
-  - Clean, responsive UI.                                                               
-                                                                                        
-  Backend Requirements                                                                  
-                                                                                        
-  - API to receive and store address data.                                              
-                                                                                        
-  - Simple database schema for addresses (e.g., country, city, postal code, line1,      
-  line2, etc.).                                                                         
-                                                                                        
-  - API to retrieve saved addresses (for demo purposes).                                
-                                                                                        
-  Notes                                                                                 
-                                                                                        
-  - Please use the React framework.                                                     
-                                                                                        
-  - For backend, use a lightweight framework (Express, Hono, Fastify).                  
-                                                                                        
-  - Database can be in-memory (SQLite) or mock if needed.                               
-                                                                                        
-  - Bonus: show how you would design the API to support dynamic country-specific        
-  metadata (field names, validation rules).
-```
-
-4. Run in terminal agents:
-```
-/speckit-specify
-```
-5. Run in terminal agents:
-```
-/speckit-plan
-```
-6. Run in terminal agents:
-```
-/speckit-tasks
-```
-7. Run in terminal agents (for cross-check spec↔plan↔tasks):
-```
-/speckit-analyze
-```
-8. If something need to be added, simply rerun in terminal agents:
-```
-/speckit-tasks
-```
+5. **Zustand was chosen instead of Context.**
+  It keeps the re-renders smaller, it reads clearly, and it was already used in the
+  project.

@@ -1,5 +1,5 @@
-import { COUNTRY_CONFIGS } from "../config/country-config";
-import type { Address, Country } from "../types";
+import type { MetadataFieldDef } from "../api/useCountryMetadata";
+import type { Country } from "../types";
 
 /** Subset of a Google Places `address_components[]` entry we rely on. */
 export interface PlaceAddressComponent {
@@ -9,8 +9,8 @@ export interface PlaceAddressComponent {
 }
 
 export interface MappedPlace {
-  /** Country-specific fields extracted from the place. */
-  fields: Partial<Address>;
+  /** Country-specific fields extracted from the place, keyed by metadata key. */
+  fields: Record<string, string | undefined>;
   /** Required field keys the autocomplete result did NOT fill (spec edge case). */
   missingRequired: string[];
   /** Google place id, when available. */
@@ -22,13 +22,17 @@ function pick(components: PlaceAddressComponent[], type: string): PlaceAddressCo
 }
 
 /**
- * Map a Google Places result to the active country's field set (D3).
- * Country differences are handled here by addressing the known component
- * `types`; the renderer stays country-agnostic.
+ * Map a Google Places result to the active country's field set (FR-014).
+ * Country differences are handled here by addressing the known Google component
+ * `types` — this is country-specific LOGIC, not data, and is intentionally
+ * exempt from the no-per-country-branch render invariant. The output is keyed by
+ * metadata field keys, and `missingRequired` is derived from the metadata
+ * `fields` so it stays in sync with the backend registry.
  */
 export function mapPlaceToFields(
   country: Country,
   components: PlaceAddressComponent[],
+  fields: MetadataFieldDef[],
   placeId?: string,
 ): MappedPlace {
   const streetNumber = pick(components, "street_number")?.long_name ?? "";
@@ -47,9 +51,9 @@ export function mapPlaceToFields(
   const aal4 = pick(components, "administrative_area_level_4")?.long_name ?? "";
   const postal = pick(components, "postal_code")?.short_name ?? "";
 
-  let fields: Partial<Address>;
+  let mapped: Record<string, string | undefined>;
   if (country === "USA") {
-    fields = {
+    mapped = {
       line1,
       line2: subpremise,
       city: locality,
@@ -57,7 +61,7 @@ export function mapPlaceToFields(
       zip: postal,
     };
   } else if (country === "AUS") {
-    fields = {
+    mapped = {
       line1,
       line2: subpremise,
       suburb: locality || sublocality,
@@ -65,7 +69,7 @@ export function mapPlaceToFields(
       postcode: postal,
     };
   } else {
-    fields = {
+    mapped = {
       province: aal1?.long_name ?? "",
       city: aal2 || locality,
       district: aal3 || sublocality,
@@ -75,10 +79,16 @@ export function mapPlaceToFields(
     };
   }
 
-  const record = fields as Record<string, string | undefined>;
-  const missingRequired = COUNTRY_CONFIGS[country].fields
-    .filter((f) => f.required && !record[f.key]?.trim())
+  // Keep only keys the active country's metadata actually declares.
+  const fieldKeys = new Set(fields.map((f) => f.key));
+  const result: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(mapped)) {
+    if (fieldKeys.has(key)) result[key] = value;
+  }
+
+  const missingRequired = fields
+    .filter((f) => f.required && !result[f.key]?.trim())
     .map((f) => f.key);
 
-  return { fields, missingRequired, placeId };
+  return { fields: result, missingRequired, placeId };
 }

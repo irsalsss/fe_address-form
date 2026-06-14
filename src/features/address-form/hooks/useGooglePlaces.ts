@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { env } from "@/shared/config/env";
 import { useDebounce } from "@/shared/hooks/useDebounce";
+import type { MetadataFieldDef } from "../api/useCountryMetadata";
 import type { Country } from "../types";
 import {
   mapPlaceToFields,
@@ -43,7 +44,12 @@ declare global {
 }
 
 /** Our country codes → ISO 3166-1 alpha-2 for Places `componentRestrictions`. */
-const COUNTRY_TO_ISO: Record<Country, string> = { USA: "us", AUS: "au", IDN: "id" };
+const COUNTRY_TO_ISO: Record<string, string> = { USA: "us", AUS: "au", IDN: "id" };
+
+/** ISO code for Places restriction; falls back to a lowercased code for unknown countries. */
+function isoFor(country: Country): string {
+  return COUNTRY_TO_ISO[country] ?? country.slice(0, 2).toLowerCase();
+}
 
 /** Min input length before we bother the predictions API. */
 const MIN_QUERY_LENGTH = 3;
@@ -75,6 +81,8 @@ function loadPlacesScript(apiKey: string): Promise<void> {
 
 interface UseGooglePlacesOptions {
   country: Country;
+  /** Active country's metadata fields — used to key the mapped result + missingRequired. */
+  fields: MetadataFieldDef[];
   enabled?: boolean;
   onResult: (result: MappedPlace) => void;
 }
@@ -103,6 +111,7 @@ export interface UseGooglePlacesReturn {
  */
 export function useGooglePlaces({
   country,
+  fields,
   enabled = true,
   onResult,
 }: UseGooglePlacesOptions): UseGooglePlacesReturn {
@@ -115,11 +124,16 @@ export function useGooglePlaces({
   const autocompleteRef = useRef<AutocompleteService | null>(null);
   const placesRef = useRef<PlacesService | null>(null);
   const onResultRef = useRef(onResult);
+  const fieldsRef = useRef(fields);
   const debouncedQuery = useDebounce(query, QUERY_DEBOUNCE_MS);
 
   useEffect(() => {
     onResultRef.current = onResult;
   }, [onResult]);
+
+  useEffect(() => {
+    fieldsRef.current = fields;
+  }, [fields]);
 
   // Load the script + build the services once.
   useEffect(() => {
@@ -161,7 +175,7 @@ export function useGooglePlaces({
     let cancelled = false;
     setLoading(true);
     service.getPlacePredictions(
-      { input, componentRestrictions: { country: COUNTRY_TO_ISO[country] } },
+      { input, componentRestrictions: { country: isoFor(country) } },
       (results) => {
         if (cancelled) return;
         setPredictions(results ?? []);
@@ -183,7 +197,12 @@ export function useGooglePlaces({
         (place) => {
           if (!place) return;
           onResultRef.current(
-            mapPlaceToFields(country, place.address_components ?? [], place.place_id),
+            mapPlaceToFields(
+              country,
+              place.address_components ?? [],
+              fieldsRef.current,
+              place.place_id,
+            ),
           );
           setPredictions([]);
         },
