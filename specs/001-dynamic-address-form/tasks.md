@@ -73,16 +73,16 @@ Feature-sliced under `src/features/address-form/{api,hooks,stores,schemas,compon
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T022 [P] [US1] Integration test: country selected → autocomplete select (mocked Places) populates structured fields → submit calls API; and "select country first" guard, in `src/features/address-form/__tests__/AddressForm.autocomplete.test.tsx`
-- [ ] T023 [P] [US1] Integration test (degradation, SC-006): with Places key absent / script blocked, search box is disabled with notice and the user can still complete + save via manual entry, in `src/features/address-form/__tests__/AddressForm.degradation.test.tsx`
+- [X] T022 [P] [US1] Integration test: country selected → autocomplete select (mocked Places) populates structured fields → submit calls API; and "select country first" guard, in `src/features/address-form/__tests__/AddressForm.autocomplete.test.tsx`
+- [X] T023 [P] [US1] Integration test (degradation, SC-006): with Places key absent / script blocked, search box is disabled with notice and the user can still complete + save via manual entry, in `src/features/address-form/__tests__/AddressForm.degradation.test.tsx`
 
 ### Implementation for User Story 1
 
-- [ ] T024 [P] [US1] Implement `address_components` → per-country field mapping (postal_code, administrative_area_level_1→state/province, locality/sublocality→city/suburb/regency); return which required fields are unfilled, in `src/features/address-form/hooks/usePlaceMapping.ts`
-- [ ] T025 [US1] Implement `useGooglePlaces` hook — lazy-load Maps JS script once (guarded), bind Autocomplete, emit mapped values on `place_changed`; expose `unavailable` flag when key missing/script fails — in `src/features/address-form/hooks/useGooglePlaces.ts` (depends on T024)
-- [ ] T026 [US1] Build `PlacesAutocomplete` component (search input, suggestions; disabled-with-notice when `unavailable`) in `src/features/address-form/components/PlacesAutocomplete.tsx` (depends on T025)
-- [ ] T027 [US1] Build `AddressConfirmation` read-only view rendering captured values in the active country's field order, flagging any required field left unfilled by autocomplete (spec edge case "partial result"), in `src/features/address-form/components/AddressConfirmation.tsx`
-- [ ] T028 [US1] Wire into `AddressForm`: gate autocomplete on country selected; on select `setValue` mapped fields + store `googlePlaceId` + show confirmation; submit via useCreateAddress in `src/features/address-form/components/AddressForm.tsx`
+- [X] T024 [P] [US1] Implement `address_components` → per-country field mapping (postal_code, administrative_area_level_1→state/province, locality/sublocality→city/suburb/regency); return which required fields are unfilled, in `src/features/address-form/hooks/usePlaceMapping.ts`
+- [X] T025 [US1] Implement `useGooglePlaces` hook — lazy-load Maps JS script once (guarded), bind Autocomplete, emit mapped values on `place_changed`; expose `unavailable` flag when key missing/script fails — in `src/features/address-form/hooks/useGooglePlaces.ts` (depends on T024)
+- [X] T026 [US1] Build `PlacesAutocomplete` component (search input, suggestions; disabled-with-notice when `unavailable`) in `src/features/address-form/components/PlacesAutocomplete.tsx` (depends on T025)
+- [X] T027 [US1] Build `AddressConfirmation` read-only view rendering captured values in the active country's field order, flagging any required field left unfilled by autocomplete (spec edge case "partial result"), in `src/features/address-form/components/AddressConfirmation.tsx`
+- [X] T028 [US1] Wire into `AddressForm`: gate autocomplete on country selected; on select `setValue` mapped fields + store `googlePlaceId` + show confirmation; submit via useCreateAddress in `src/features/address-form/components/AddressForm.tsx`
 
 **Checkpoint**: Autocomplete capture → confirm → save works independently, and degrades to manual when Places unavailable (MVP)
 
